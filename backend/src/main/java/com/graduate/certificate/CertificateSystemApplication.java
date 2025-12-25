@@ -10,7 +10,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 @MapperScan("com.graduate.certificate.mapper")
 public class CertificateSystemApplication {
-
     public static void main(String[] args) {
         SpringApplication.run(CertificateSystemApplication.class, args);
         System.out.println("=================================");
