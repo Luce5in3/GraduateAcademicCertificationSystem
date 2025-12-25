@@ -1,0 +1,20 @@
+package com.graduate.certificate;
+
+import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+/**
+ * 毕业证明管理系统启动类
+ */
+@SpringBootApplication
+@MapperScan("com.graduate.certificate.mapper")
+public class CertificateSystemApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(CertificateSystemApplication.class, args);
+        System.out.println("=================================");
+        System.out.println("毕业证明管理系统启动成功！");
+        System.out.println("=================================");
+    }
+}
