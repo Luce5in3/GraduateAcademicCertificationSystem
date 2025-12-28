@@ -3,9 +3,11 @@ package com.graduate.certificate.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,14 +15,20 @@ import java.util.Map;
 /**
  * JWT工具类
  */
+@Slf4j
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
+    @Value("${jwt.secret:graduate-certificate-system-secret-key-2024-for-hs512-algorithm-minimum-64-bytes}")
     private String secret;
 
-    @Value("${jwt.expiration}")
+    @Value("${jwt.expiration:900000}")
     private Long expiration;
+
+    @PostConstruct
+    public void init() {
+        log.info("JWT配置加载成功: secret长度={}, expiration={}ms", secret.length(), expiration);
+    }
 
     /**
      * 生成Token
@@ -44,7 +52,7 @@ public class JwtUtil {
                 .setSubject(username)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(SignatureAlgorithm.HS512, secret)
+                .signWith(SignatureAlgorithm.HS512, secret.getBytes())
                 .compact();
     }
 
@@ -90,7 +98,7 @@ public class JwtUtil {
     private Claims getClaimsFromToken(String token) {
         try {
             return Jwts.parser()
-                    .setSigningKey(secret)
+                    .setSigningKey(secret.getBytes())
                     .parseClaimsJws(token)
                     .getBody();
         } catch (Exception e) {
