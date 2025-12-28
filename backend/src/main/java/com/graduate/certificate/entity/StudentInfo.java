@@ -1,6 +1,8 @@
 package com.graduate.certificate.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -102,12 +104,29 @@ public class StudentInfo implements Serializable {
     private String pkTeacher;
 
     /**
+     * 所属部门
+     */
+    private String department;
+
+    /**
+     * 部门主键(所属系别)
+     */
+    private String pkDepartment;
+
+    /**
+     * 学院主键
+     */
+    private String pkCollege;
+
+    /**
      * 创建时间
      */
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
     /**
      * 更新时间
      */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 }
