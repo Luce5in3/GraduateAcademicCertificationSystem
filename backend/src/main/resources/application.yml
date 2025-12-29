@@ -67,6 +67,6 @@ mybatis-plus:
 # JWT配置
 jwt:
   secret: graduate-certificate-system-secret-key-2024-for-hs512-algorithm-minimum-64-bytes
-  expiration: 900000  # 15分钟（15 * 60 * 1000）
+  expiration: 10080000  # 7天
   header: Authorization
   prefix: Bearer
