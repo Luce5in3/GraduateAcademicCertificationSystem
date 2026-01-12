@@ -68,4 +68,13 @@ public class CertificateApplicationController {
         IPage<ApplicationResponse> page = applicationService.getPendingApprovals(current, size);
         return Result.success(page);
     }
+    
+    /**
+     * 获取证明详情（包含学生信息和模板信息）
+     */
+    @GetMapping("/{pkCa}/detail")
+    public Result<ApplicationResponse> getCertificateDetail(@PathVariable String pkCa) {
+        ApplicationResponse response = applicationService.getCertificateDetail(pkCa);
+        return Result.success(response);
+    }
 }

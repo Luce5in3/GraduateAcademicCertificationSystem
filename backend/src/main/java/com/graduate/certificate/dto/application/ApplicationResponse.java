@@ -109,4 +109,76 @@ public class ApplicationResponse {
      * 更新时间
      */
     private LocalDateTime updateTime;
+    
+    // ========== 扩展字段（证明详情使用） ==========
+    
+    /**
+     * 学生姓名
+     */
+    private String studentName;
+    
+    /**
+     * 学号
+     */
+    private String studentNo;
+    
+    /**
+     * 学院
+     */
+    private String college;
+    
+    /**
+     * 专业
+     */
+    private String major;
+    
+    /**
+     * 班级
+     */
+    private String className;
+    
+    /**
+     * 年级
+     */
+    private String grade;
+    
+    /**
+     * 学历层次
+     */
+    private String educationLevel;
+    
+    /**
+     * 学习形式
+     */
+    private String studyType;
+    
+    /**
+     * 入学日期
+     */
+    private String enrollmentDate;
+    
+    /**
+     * 毕业日期
+     */
+    private String graduationDate;
+    
+    /**
+     * 模板名称
+     */
+    private String templateName;
+    
+    /**
+     * 模板编码
+     */
+    private String templateCode;
+    
+    /**
+     * 模板类型
+     */
+    private String templateType;
+    
+    /**
+     * 模板内容
+     */
+    private String templateContent;
 }

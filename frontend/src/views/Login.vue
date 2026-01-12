@@ -3,8 +3,8 @@
     <el-card class="login-card">
       <template #header>
         <div class="card-header">
-          <h2>研究生学术认证系统</h2>
-          <p>登录</p>
+          <h2>毕业证书管理系统</h2>
+          <p>Graduate Academic Certificate System</p>
         </div>
       </template>
 
@@ -101,7 +101,7 @@ const handleLogin = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1677FF 0%, #0050B3 100%);
 }
 
 .login-card {
@@ -114,7 +114,9 @@ const handleLogin = async () => {
 
 .card-header h2 {
   margin: 0 0 10px 0;
-  color: #409eff;
+  color: #1677FF;
+  font-size: 28px;
+  font-weight: 600;
 }
 
 .card-header p {
@@ -129,7 +131,7 @@ const handleLogin = async () => {
 }
 
 .footer-links a {
-  color: #409eff;
+  color: #1677FF;
   text-decoration: none;
 }
 

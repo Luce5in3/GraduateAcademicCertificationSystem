@@ -255,4 +255,48 @@ public class CertificateApplicationServiceImpl implements CertificateApplication
         response.setStatusDesc(ApplicationStatusConstant.getStatusDesc(application.getStatus()));
         return response;
     }
+    
+    @Override
+    public ApplicationResponse getCertificateDetail(String pkCa) {
+        // 查询申请信息
+        CertificateApplication application = applicationMapper.selectById(pkCa);
+        if (application == null) {
+            throw new BusinessException(ResultCode.APPLICATION_NOT_FOUND);
+        }
+        
+        // 查询学生信息
+        StudentInfo student = studentInfoMapper.selectById(application.getPkStudent());
+        if (student == null) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "学生信息不存在");
+        }
+        
+        // 查询模板信息
+        CertificateTemplate template = templateMapper.selectById(application.getPkCt());
+        if (template == null) {
+            throw new BusinessException(ResultCode.TEMPLATE_NOT_FOUND);
+        }
+        
+        // 组装响应数据
+        ApplicationResponse response = convertToResponse(application);
+        
+        // 填充学生信息
+        response.setStudentName(student.getName());
+        response.setStudentNo(student.getStudentNo());
+        response.setCollege(student.getCollege());
+        response.setMajor(student.getMajor());
+        response.setClassName(student.getClassName());
+        response.setGrade(student.getGrade());
+        response.setEducationLevel(student.getEducationLevel());
+        response.setStudyType(student.getStudyType());
+        response.setEnrollmentDate(student.getEnrollmentDate() != null ? student.getEnrollmentDate().toString() : null);
+        response.setGraduationDate(student.getGraduationDate() != null ? student.getGraduationDate().toString() : null);
+        
+        // 填充模板信息
+        response.setTemplateName(template.getTemplateName());
+        response.setTemplateCode(template.getTemplateCode());
+        response.setTemplateType(template.getTemplateType());
+        response.setTemplateContent(template.getTemplateContent());
+        
+        return response;
+    }
 }
