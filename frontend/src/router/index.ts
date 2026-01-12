@@ -40,6 +40,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '我的申请', requiresAuth: true, roles: [1] },
       },
       {
+        path: 'student/certificate-detail/:pkCa',
+        name: 'CertificateDetail',
+        component: () => import('@/views/student/CertificateDetail.vue'),
+        meta: { title: '证明详情', requiresAuth: true, roles: [1] },
+      },
+      {
         path: 'student/profile',
         name: 'StudentProfile',
         component: () => import('@/views/student/Profile.vue'),
@@ -81,10 +87,10 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  const userInfo = localStorage.getItem('userInfo')
+  const userInfoStr = localStorage.getItem('userInfo')
   
   // 设置页面标题
-  document.title = `${to.meta.title || '研究生学术认证系统'}`
+  document.title = `${to.meta.title || '毕业学术证书管理系统'}`
   
   // 需要登录的页面
   if (to.meta.requiresAuth) {
@@ -95,11 +101,53 @@ router.beforeEach((to, from, next) => {
     }
     
     // 角色权限检查
-    if (to.meta.roles && userInfo) {
-      const user = JSON.parse(userInfo)
-      if (!to.meta.roles.includes(user.userType)) {
-        ElMessage.error('没有权限访问该页面')
-        next(from.path)
+    if (to.meta.roles && userInfoStr) {
+      try {
+        // 安全解析 userInfo
+        if (userInfoStr === 'undefined' || userInfoStr === 'null' || !userInfoStr) {
+          console.error('用户信息无效，请重新登录')
+          localStorage.removeItem('token')
+          localStorage.removeItem('userInfo')
+          ElMessage.warning('用户信息已过期，请重新登录')
+          next('/login')
+          return
+        }
+        
+        const user = JSON.parse(userInfoStr)
+        console.log('解析后的用户信息:', user)  // 调试日志
+        
+        // 检查用户信息结构
+        if (!user || typeof user !== 'object') {
+          console.error('用户信息格式错误: 不是对象', user)
+          localStorage.removeItem('token')
+          localStorage.removeItem('userInfo')
+          ElMessage.warning('用户信息异常，请重新登录')
+          next('/login')
+          return
+        }
+        
+        // 检查 userType 字段
+        if (user.userType === undefined || user.userType === null) {
+          console.error('用户信息缺少 userType 字段', user)
+          localStorage.removeItem('token')
+          localStorage.removeItem('userInfo')
+          ElMessage.warning('用户信息不完整，请重新登录')
+          next('/login')
+          return
+        }
+        
+        if (!to.meta.roles.includes(user.userType)) {
+          ElMessage.error('没有权限访问该页面')
+          next(from.path || '/dashboard')
+          return
+        }
+      } catch (error) {
+        console.error('JSON 解析错误:', error)
+        console.error('原始 userInfoStr:', userInfoStr)
+        localStorage.removeItem('token')
+        localStorage.removeItem('userInfo')
+        ElMessage.warning('用户信息损坏，请重新登录')
+        next('/login')
         return
       }
     }

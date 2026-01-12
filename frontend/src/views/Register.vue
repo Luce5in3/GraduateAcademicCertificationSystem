@@ -3,8 +3,8 @@
     <el-card class="register-card">
       <template #header>
         <div class="card-header">
-          <h2>研究生学术认证系统</h2>
-          <p>注册</p>
+          <h2>毕业学术证书管理系统</h2>
+          <p>用户注册</p>
         </div>
       </template>
 
@@ -41,6 +41,30 @@
           <el-input
             v-model="registerForm.teacherId"
             placeholder="请输入教师工号"
+            clearable
+          />
+        </el-form-item>
+
+        <el-form-item label="姓名" prop="name">
+          <el-input
+            v-model="registerForm.name"
+            placeholder="请输入真实姓名"
+            clearable
+          />
+        </el-form-item>
+
+        <el-form-item label="电子邮箱" prop="email">
+          <el-input
+            v-model="registerForm.email"
+            placeholder="请输入电子邮箱"
+            clearable
+          />
+        </el-form-item>
+
+        <el-form-item label="手机号" prop="phone">
+          <el-input
+            v-model="registerForm.phone"
+            placeholder="请输入手机号"
             clearable
           />
         </el-form-item>
@@ -113,6 +137,9 @@ const registerForm = reactive({
   userType: 1,
   studentId: '',
   teacherId: '',
+  name: '',
+  email: '',
+  phone: '',
 })
 
 const validateConfirmPassword = (rule: any, value: any, callback: any) => {
@@ -134,6 +161,17 @@ const registerRules: FormRules = {
   ],
   teacherId: [
     { required: true, message: '请输入教师工号', trigger: 'blur' },
+  ],
+  name: [
+    { required: true, message: '请输入姓名', trigger: 'blur' },
+  ],
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '邮箱格式不正确', trigger: 'blur' },
+  ],
+  phone: [
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' },
   ],
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -158,6 +196,9 @@ const handleRegister = async () => {
           username: registerForm.username,
           password: registerForm.password,
           userType: registerForm.userType,
+          name: registerForm.name,
+          email: registerForm.email,
+          phone: registerForm.phone,
         }
         
         if (registerForm.userType === 1) {
@@ -185,7 +226,7 @@ const handleRegister = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1677FF 0%, #0050B3 100%);
   padding: 20px 0;
 }
 
@@ -199,7 +240,9 @@ const handleRegister = async () => {
 
 .card-header h2 {
   margin: 0 0 10px 0;
-  color: #409eff;
+  color: #1677FF;
+  font-size: 28px;
+  font-weight: 600;
 }
 
 .card-header p {
@@ -214,7 +257,7 @@ const handleRegister = async () => {
 }
 
 .footer-links a {
-  color: #409eff;
+  color: #1677FF;
   text-decoration: none;
 }
 

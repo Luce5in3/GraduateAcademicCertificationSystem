@@ -38,6 +38,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getAllApplications } from '@/api/application'
+import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
 const tableData = ref([])
@@ -71,13 +72,16 @@ const fetchData = async () => {
   loading.value = true
   try {
     const res: any = await getAllApplications({
-      page: currentPage.value,
+      current: currentPage.value,
       size: pageSize.value,
     })
     if (res.code === 200) {
       tableData.value = res.data.records || res.data || []
       total.value = res.data.total || tableData.value.length
     }
+  } catch (error: any) {
+    console.error('获取申请列表失败:', error)
+    ElMessage.error(error.message || '获取列表失败，请稍后再试')
   } finally {
     loading.value = false
   }

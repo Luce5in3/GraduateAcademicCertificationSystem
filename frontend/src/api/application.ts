@@ -18,9 +18,9 @@ export interface ApplicationResponse {
 }
 
 // 提交证书申请
-export const submitApplication = (data: ApplicationRequest) => {
+export const submitApplication = (data: any) => {
   return request({
-    url: '/certificate-application/submit',
+    url: '/application',
     method: 'post',
     data,
   })
@@ -29,7 +29,7 @@ export const submitApplication = (data: ApplicationRequest) => {
 // 获取我的申请列表
 export const getMyApplications = (params?: any) => {
   return request({
-    url: '/certificate-application/my-list',
+    url: '/application/my',
     method: 'get',
     params,
   })
@@ -38,7 +38,15 @@ export const getMyApplications = (params?: any) => {
 // 获取申请详情
 export const getApplicationDetail = (id: string) => {
   return request({
-    url: `/certificate-application/${id}`,
+    url: `/application/${id}`,
+    method: 'get',
+  })
+}
+
+// 获取证明详情（包含学生信息和模板信息）
+export const getCertificateDetail = (id: string) => {
+  return request({
+    url: `/application/${id}/detail`,
     method: 'get',
   })
 }
@@ -46,15 +54,24 @@ export const getApplicationDetail = (id: string) => {
 // 撤销申请
 export const cancelApplication = (id: string) => {
   return request({
-    url: `/certificate-application/${id}/cancel`,
+    url: `/application/${id}/cancel`,
     method: 'put',
   })
 }
 
-// 获取所有申请列表（管理员/教师）
+// 获取待审批列表（教师用）
+export const getPendingApplications = (params?: any) => {
+  return request({
+    url: '/application/pending',
+    method: 'get',
+    params,
+  })
+}
+
+// 获取所有申请列表（教师用）
 export const getAllApplications = (params?: any) => {
   return request({
-    url: '/certificate-application/list',
+    url: '/application/my',  // 暂时使用同一个接口
     method: 'get',
     params,
   })

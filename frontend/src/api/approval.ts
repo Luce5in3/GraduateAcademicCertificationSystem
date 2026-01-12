@@ -11,7 +11,7 @@ export interface ApprovalRequest {
 // 提交审批
 export const submitApproval = (data: ApprovalRequest) => {
   return request({
-    url: '/approval/submit',
+    url: '/approval',
     method: 'post',
     data,
   })
@@ -20,7 +20,7 @@ export const submitApproval = (data: ApprovalRequest) => {
 // 获取待审批列表
 export const getPendingApprovals = (params?: any) => {
   return request({
-    url: '/approval/pending',
+    url: '/application/pending',
     method: 'get',
     params,
   })

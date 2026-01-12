@@ -33,4 +33,9 @@ public interface CertificateApplicationService {
      * 查询待审批列表
      */
     IPage<ApplicationResponse> getPendingApprovals(int current, int size);
+    
+    /**
+     * 获取证明详情（包含学生信息和模板信息）
+     */
+    ApplicationResponse getCertificateDetail(String pkCa);
 }
