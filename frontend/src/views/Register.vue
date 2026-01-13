@@ -195,8 +195,9 @@ const handleRegister = async () => {
         const data: any = {
           username: registerForm.username,
           password: registerForm.password,
+          confirmPassword: registerForm.confirmPassword,
           userType: registerForm.userType,
-          name: registerForm.name,
+          realName: registerForm.name,  // 后端期望的字段名是 realName
           email: registerForm.email,
           phone: registerForm.phone,
         }

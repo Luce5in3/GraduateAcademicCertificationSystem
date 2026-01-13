@@ -21,12 +21,14 @@
             placeholder="请选择需要申请的证书类型" 
             style="width: 100%"
             size="large"
+            :loading="templatesLoading"
           >
-            <el-option label="在读证明" value="在读证明" />
-            <el-option label="成绩单" value="成绩单" />
-            <el-option label="毕业证明" value="毕业证明" />
-            <el-option label="学位证明" value="学位证明" />
-            <el-option label="学术成果证明" value="学术成果证明" />
+            <el-option 
+              v-for="template in certificateTemplates" 
+              :key="template.value" 
+              :label="template.label" 
+              :value="template.value" 
+            />
           </el-select>
         </el-form-item>
 
@@ -104,9 +106,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { submitApplication } from '@/api/application'
+import { submitApplication, getAvailableTemplates, type CertificateTemplate } from '@/api/application'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { DocumentChecked, RefreshLeft } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -114,6 +116,8 @@ import type { FormInstance, FormRules } from 'element-plus'
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const templatesLoading = ref(false)
+const certificateTemplates = ref<CertificateTemplate[]>([])
 
 const form = reactive({
   certificateType: '',
@@ -142,8 +146,12 @@ const handleSubmit = async () => {
   await formRef.value.validate(async (valid) => {
     if (valid) {
       try {
+        // 获取选中的模板信息
+        const selectedTemplate = certificateTemplates.value.find(t => t.value === form.certificateType)
+        const templateName = selectedTemplate?.label || form.certificateType
+        
         await ElMessageBox.confirm(
-          `您将申请 ${form.quantity} 份「${form.certificateType}」${form.isUrgent ? '（加急）' : ''}，确认提交？`,
+          `您将申请 ${form.quantity} 份「${templateName}」${form.isUrgent ? '（加急）' : ''}，确认提交？`,
           '确认信息',
           {
             confirmButtonText: '确认提交',
@@ -153,7 +161,18 @@ const handleSubmit = async () => {
         )
         
         loading.value = true
-        const res: any = await submitApplication(form)
+        // 构建提交数据，使用 pkCt 而不是 certificateType
+        const submitData = {
+          pkCt: form.certificateType, // 模板ID
+          applicationReason: form.reason,
+          copies: form.quantity,
+          urgent: form.isUrgent ? 1 : 0,
+          applicationData: JSON.stringify({
+            notes: form.notes
+          })
+        }
+        
+        const res: any = await submitApplication(submitData)
         if (res.code === 200) {
           ElMessage.success('申请提交成功，请耐心等待审批')
           handleReset()
@@ -171,6 +190,26 @@ const handleSubmit = async () => {
 const handleReset = () => {
   formRef.value?.resetFields()
 }
+
+// 加载证书模板列表
+const loadTemplates = async () => {
+  try {
+    templatesLoading.value = true
+    const res: any = await getAvailableTemplates()
+    if (res.code === 200) {
+      certificateTemplates.value = res.data
+    }
+  } catch (error) {
+    ElMessage.error('加载证书类型失败')
+  } finally {
+    templatesLoading.value = false
+  }
+}
+
+// 页面加载时获取模板列表
+onMounted(() => {
+  loadTemplates()
+})
 </script>
 
 <style scoped>

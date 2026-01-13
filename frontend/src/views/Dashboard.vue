@@ -18,11 +18,11 @@
     <!-- 统计卡片 -->
     <div class="stats-cards">
       <template v-if="userStore.isStudent()">
-        <el-card class="stat-card stat-card-primary" shadow="hover">
+        <el-card class="stat-card stat-card-primary" shadow="hover" v-loading="loading">
           <div class="stat-content">
             <div class="stat-info">
               <div class="stat-label">待审批申请</div>
-              <div class="stat-value">3</div>
+              <div class="stat-value">{{ statistics.pendingCount || 0 }}</div>
             </div>
             <el-icon :size="50" class="stat-icon">
               <Clock />
@@ -30,11 +30,11 @@
           </div>
         </el-card>
 
-        <el-card class="stat-card stat-card-success" shadow="hover">
+        <el-card class="stat-card stat-card-success" shadow="hover" v-loading="loading">
           <div class="stat-content">
             <div class="stat-info">
               <div class="stat-label">已通过</div>
-              <div class="stat-value">5</div>
+              <div class="stat-value">{{ statistics.approvedCount || 0 }}</div>
             </div>
             <el-icon :size="50" class="stat-icon">
               <CircleCheck />
@@ -42,11 +42,11 @@
           </div>
         </el-card>
 
-        <el-card class="stat-card stat-card-warning" shadow="hover">
+        <el-card class="stat-card stat-card-warning" shadow="hover" v-loading="loading">
           <div class="stat-content">
             <div class="stat-info">
               <div class="stat-label">申请总数</div>
-              <div class="stat-value">8</div>
+              <div class="stat-value">{{ statistics.totalCount || 0 }}</div>
             </div>
             <el-icon :size="50" class="stat-icon">
               <DocumentCopy />
@@ -56,11 +56,11 @@
       </template>
 
       <template v-if="userStore.isTeacher()">
-        <el-card class="stat-card stat-card-danger" shadow="hover">
+        <el-card class="stat-card stat-card-danger" shadow="hover" v-loading="loading">
           <div class="stat-content">
             <div class="stat-info">
               <div class="stat-label">待审批</div>
-              <div class="stat-value">12</div>
+              <div class="stat-value">{{ statistics.pendingCount || 0 }}</div>
             </div>
             <el-icon :size="50" class="stat-icon">
               <Warning />
@@ -68,11 +68,11 @@
           </div>
         </el-card>
 
-        <el-card class="stat-card stat-card-success" shadow="hover">
+        <el-card class="stat-card stat-card-success" shadow="hover" v-loading="loading">
           <div class="stat-content">
             <div class="stat-info">
               <div class="stat-label">今日已审批</div>
-              <div class="stat-value">7</div>
+              <div class="stat-value">{{ statistics.todayApprovedCount || 0 }}</div>
             </div>
             <el-icon :size="50" class="stat-icon">
               <Select />
@@ -80,11 +80,11 @@
           </div>
         </el-card>
 
-        <el-card class="stat-card stat-card-info" shadow="hover">
+        <el-card class="stat-card stat-card-info" shadow="hover" v-loading="loading">
           <div class="stat-content">
             <div class="stat-info">
               <div class="stat-label">总审批数</div>
-              <div class="stat-value">156</div>
+              <div class="stat-value">{{ statistics.totalApprovalCount || 0 }}</div>
             </div>
             <el-icon :size="50" class="stat-icon">
               <DataAnalysis />
@@ -185,117 +185,18 @@
       </el-col>
     </el-row>
 
-    <!-- 系统公告与待办事项 -->
-    <el-row :gutter="20" class="content-section">
-      <el-col :span="12">
-        <el-card>
-          <template #header>
-            <div class="card-header">
-              <span>系统公告 / 提示</span>
-            </div>
-          </template>
-          <div class="notice-list">
-            <div class="notice-item">
-              <el-icon color="#1677FF"><Bell /></el-icon>
-              <span>系统将于本周六凌晨2点进行维护升级</span>
-            </div>
-            <div class="notice-item">
-              <el-icon color="#67c23a"><Promotion /></el-icon>
-              <span>新增在线证书打印功能，欢迎体验</span>
-            </div>
-            <div class="notice-item">
-              <el-icon color="#e6a23c"><InfoFilled /></el-icon>
-              <span>请及时完善个人信息以便审核</span>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
 
-      <el-col :span="12">
-        <el-card>
-          <template #header>
-            <div class="card-header">
-              <span>待办事项</span>
-            </div>
-          </template>
-          <div class="todo-list">
-            <template v-if="userStore.isStudent()">
-              <div class="todo-item">
-                <el-badge :value="3" class="todo-badge">
-                  <el-icon :size="24" color="#e6a23c"><Clock /></el-icon>
-                </el-badge>
-                <div class="todo-text">
-                  <h4>待审批申请</h4>
-                  <p>您有3个申请正在等待审批</p>
-                </div>
-              </div>
-              <div class="todo-item">
-                <el-badge :value="5" class="todo-badge">
-                  <el-icon :size="24" color="#67c23a"><CircleCheck /></el-icon>
-                </el-badge>
-                <div class="todo-text">
-                  <h4>已通过申请</h4>
-                  <p>您有5个申请已经通过审批</p>
-                </div>
-              </div>
-            </template>
-            <template v-if="userStore.isTeacher()">
-              <div class="todo-item">
-                <el-badge :value="12" class="todo-badge">
-                  <el-icon :size="24" color="#f56c6c"><Warning /></el-icon>
-                </el-badge>
-                <div class="todo-text">
-                  <h4>待审批申请</h4>
-                  <p>12个申请等待您的审批</p>
-                </div>
-              </div>
-              <div class="todo-item">
-                <el-badge :value="7" class="todo-badge">
-                  <el-icon :size="24" color="#67c23a"><Select /></el-icon>
-                </el-badge>
-                <div class="todo-text">
-                  <h4>今日已审批</h4>
-                  <p>今天已处理7个申请</p>
-                </div>
-              </div>
-            </template>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
 
-    <!-- 最近动态 -->
-    <el-card class="content-section">
-      <template #header>
-        <div class="card-header">
-          <span>最近动态</span>
-        </div>
-      </template>
-      <el-timeline>
-        <el-timeline-item timestamp="2025-12-30 10:30" placement="top">
-          <el-card>
-            <p>您的学术成果证明申请已通过审核</p>
-          </el-card>
-        </el-timeline-item>
-        <el-timeline-item timestamp="2025-12-29 14:20" placement="top">
-          <el-card>
-            <p>您提交了新的证书申请</p>
-          </el-card>
-        </el-timeline-item>
-        <el-timeline-item timestamp="2025-12-28 09:15" placement="top">
-          <el-card>
-            <p>系统更新：新增批量导出功能</p>
-          </el-card>
-        </el-timeline-item>
-      </el-timeline>
-    </el-card>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
+import { getStudentStatistics, getTeacherStatistics, type StatisticsResponse } from '@/api/application'
+import { ElMessage } from 'element-plus'
 import { 
   DocumentAdd, 
   List, 
@@ -307,9 +208,6 @@ import {
   Warning,
   Select,
   DataAnalysis,
-  Bell,
-  Promotion,
-  InfoFilled,
   Document as DocumentIcon,
   Postcard,
   ArrowRight
@@ -319,6 +217,10 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const CheckIcon = Check
+
+// 统计数据
+const statistics = ref<StatisticsResponse>({})
+const loading = ref(false)
 
 const userTypeText = computed(() => {
   const type = userStore.getUserType()
@@ -340,6 +242,36 @@ const handleGoProfile = () => {
   const profilePath = userStore.isStudent() ? '/student/profile' : '/teacher/profile'
   router.push(profilePath)
 }
+
+// 加载统计数据
+const loadStatistics = async () => {
+  try {
+    loading.value = true
+    let response
+    
+    if (userStore.isStudent()) {
+      response = await getStudentStatistics()
+    } else if (userStore.isTeacher()) {
+      response = await getTeacherStatistics()
+    } else {
+      return
+    }
+    
+    if (response.code === 200 && response.data) {
+      statistics.value = response.data
+    }
+  } catch (error: any) {
+    console.error('加载统计数据失败:', error)
+    ElMessage.error(error.message || '加载统计数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 组件加载时获取统计数据
+onMounted(() => {
+  loadStatistics()
+})
 </script>
 
 <style scoped>
@@ -532,43 +464,7 @@ const handleGoProfile = () => {
   font-size: 13px;
 }
 
-/* 待办事项 */
-.todo-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
 
-.todo-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: #F5F7FA;
-  border-radius: 8px;
-  transition: all 0.3s;
-}
-
-.todo-item:hover {
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.todo-badge {
-  margin-right: 8px;
-}
-
-.todo-text h4 {
-  margin: 0 0 4px 0;
-  color: #303133;
-  font-size: 14px;
-}
-
-.todo-text p {
-  margin: 0;
-  color: #909399;
-  font-size: 13px;
-}
 
 /* 内容区域 */
 .content-section {
@@ -581,41 +477,9 @@ const handleGoProfile = () => {
   color: #303133;
 }
 
-/* 公告列表 */
-.notice-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
 
-.notice-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background-color: #f5f7fa;
-  border-radius: 8px;
-  transition: background-color 0.3s;
-}
 
-.notice-item:hover {
-  background-color: #e9ecf1;
-}
 
-.notice-item span {
-  color: #606266;
-  font-size: 14px;
-}
-
-/* 时间轴 */
-:deep(.el-timeline-item__timestamp) {
-  color: #909399;
-  font-size: 13px;
-}
-
-:deep(.el-timeline-item__content) {
-  color: #606266;
-}
 
 /* 响应式 */
 @media (max-width: 768px) {

@@ -8,7 +8,11 @@
             <h2>📜 证明详情</h2>
           </div>
           <div class="header-right">
-            <el-button type="primary" @click="handleExport" v-if="detail.status === 2">
+            <el-button type="success" @click="handlePreview" v-if="detail && detail.status === 2">
+              <el-icon><View /></el-icon>
+              预览证明
+            </el-button>
+            <el-button type="primary" @click="handleExport" v-if="detail && detail.status === 2">
               <el-icon><Download /></el-icon>
               导出电子版
             </el-button>
@@ -43,9 +47,9 @@
           <!-- 电子证明预览 -->
           <div class="certificate-section" v-if="detail.status === 2">
             <h3 class="section-title">电子证明</h3>
-            <div class="certificate-preview">
+            <div class="certificate-preview" id="certificate-preview">
               <!-- 成绩证明模板 -->
-              <div v-if="detail.certificateType === '成绩证明'" class="certificate-content grade-certificate">
+              <div v-if="detail.certificateType === '成绩证明'" class="certificate-content grade-certificate" id="certificate-content">
                 <h1 class="certificate-title">成绩证明</h1>
                 <div class="certificate-body">
                   <p class="certificate-intro">兹证明：</p>
@@ -78,7 +82,7 @@
               </div>
 
               <!-- 学历证明模板 -->
-              <div v-else-if="detail.certificateType === '学历证明'" class="certificate-content degree-certificate">
+              <div v-else-if="detail.certificateType === '学历证明'" class="certificate-content degree-certificate" id="certificate-content">
                 <h1 class="certificate-title">学历证明</h1>
                 <div class="certificate-body">
                   <p class="certificate-intro">兹证明：</p>
@@ -112,7 +116,7 @@
               </div>
 
               <!-- 在读证明模板 -->
-              <div v-else-if="detail.certificateType === '在读证明'" class="certificate-content study-certificate">
+              <div v-else-if="detail.certificateType === '在读证明'" class="certificate-content study-certificate" id="certificate-content">
                 <h1 class="certificate-title">在读证明</h1>
                 <div class="certificate-body">
                   <p class="certificate-intro">兹证明：</p>
@@ -142,7 +146,7 @@
               </div>
 
               <!-- 其他证明类型的通用模板 -->
-              <div v-else class="certificate-content general-certificate">
+              <div v-else class="certificate-content general-certificate" id="certificate-content">
                 <h1 class="certificate-title">{{ detail.certificateType }}</h1>
                 <div class="certificate-body">
                   <p class="certificate-intro">兹证明：</p>
@@ -187,7 +191,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, Download } from '@element-plus/icons-vue'
+import { ArrowLeft, Download, View } from '@element-plus/icons-vue'
 import request from '@/api/request'
 
 const router = useRouter()
@@ -293,9 +297,17 @@ const goBack = () => {
   router.back()
 }
 
+const handlePreview = () => {
+  // 在新窗口打开证明预览页面
+  const pkCa = route.params.pkCa as string
+  const previewUrl = `/certificate-preview/${pkCa}`
+  window.open(previewUrl, '_blank')
+}
+
 const handleExport = () => {
-  // 使用浏览器打印功能导出PDF
-  window.print()
+  // 直接打开预览页面，用户在那里点击打印/导出PDF
+  handlePreview()
+  ElMessage.success('请在新打开的窗口中点击“打印/导出PDF”按钮')
 }
 
 onMounted(() => {
@@ -451,21 +463,48 @@ onMounted(() => {
 
 /* 打印样式 */
 @media print {
+  /* 隐藏所有其他内容 */
   .header,
   .info-section,
   .section-title,
-  .certificate-preview {
+  .el-card__header,
+  .detail-content > *:not(.certificate-section) {
     display: none !important;
   }
-
-  .certificate-content {
-    padding: 40px;
-    box-shadow: none;
-    border: none;
+  
+  /* 证明区域占满整个页面 */
+  .certificate-detail,
+  .detail-card,
+  .detail-content,
+  .certificate-section {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+  }
+  
+  /* 证明预览背景去除 */
+  .certificate-preview {
+    background: white !important;
+    padding: 0 !important;
   }
 
-  .detail-card {
-    box-shadow: none;
+  /* 证明内容样式优化 */
+  .certificate-content {
+    padding: 40px !important;
+    box-shadow: none !important;
+    border: none !important;
+    min-height: auto !important;
+    page-break-after: avoid;
+  }
+  
+  /* 确保证明标题和内容打印 */
+  .certificate-title,
+  .certificate-body,
+  .student-info,
+  .certificate-footer {
+    display: block !important;
   }
 }
 </style>
