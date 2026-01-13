@@ -10,10 +10,13 @@ import com.graduate.certificate.common.exception.BusinessException;
 import com.graduate.certificate.common.result.ResultCode;
 import com.graduate.certificate.dto.application.ApplicationRequest;
 import com.graduate.certificate.dto.application.ApplicationResponse;
+import com.graduate.certificate.dto.application.StatisticsResponse;
+import com.graduate.certificate.entity.ApprovalRecord;
 import com.graduate.certificate.entity.CertificateApplication;
 import com.graduate.certificate.entity.CertificateTemplate;
 import com.graduate.certificate.entity.StudentInfo;
 import com.graduate.certificate.entity.TeacherInfo;
+import com.graduate.certificate.mapper.ApprovalRecordMapper;
 import com.graduate.certificate.mapper.CertificateApplicationMapper;
 import com.graduate.certificate.mapper.CertificateTemplateMapper;
 import com.graduate.certificate.mapper.StudentInfoMapper;
@@ -30,6 +33,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 证明申请服务实现类
@@ -43,6 +47,7 @@ public class CertificateApplicationServiceImpl implements CertificateApplication
     private final CertificateTemplateMapper templateMapper;
     private final StudentInfoMapper studentInfoMapper;
     private final TeacherInfoMapper teacherInfoMapper;
+    private final ApprovalRecordMapper approvalRecordMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -177,64 +182,76 @@ public class CertificateApplicationServiceImpl implements CertificateApplication
         
         // 第一级审批：只能看到指定给自己的
         // 第二级及以上：能看到同学院、同系别且级别足够的所有申请
-        wrapper.and(w -> w
-            // 情况1：第一级审批，指定给我的
-            .eq(CertificateApplication::getPkTeacher, teacherId)
-            .or()
-            // 情况2：第二级及以上，我有足够的级别，且申请者是我学院/系的
-            .and(w2 -> {
-                w2.isNull(CertificateApplication::getPkTeacher) // pkTeacher为空表示第二级及以上
-                  .ge(CertificateApplication::getCurrentApprovalLevel, 2);
-                
-                // 子查询：申请的学生和我在同一个学院/系
-                List<CertificateApplication> allApps = applicationMapper.selectList(
-                    new LambdaQueryWrapper<CertificateApplication>()
-                        .in(CertificateApplication::getStatus, 
-                            ApplicationStatusConstant.PENDING, 
-                            ApplicationStatusConstant.IN_PROGRESS)
-                        .isNull(CertificateApplication::getPkTeacher)
-                );
-                
-                // 过滤出符合条件的申请
-                List<String> validPkCaList = allApps.stream()
-                    .filter(app -> {
-                        StudentInfo student = studentInfoMapper.selectById(app.getPkStudent());
-                        if (student == null) return false;
-                        
-                        // 验证学院
-                        boolean sameCollege = StringUtils.hasText(student.getPkCollege()) 
-                            && student.getPkCollege().equals(teacher.getPkCollege());
-                        if (!sameCollege) return false;
-                        
-                        // 验证系别（如果学生有系别）
-                        if (StringUtils.hasText(student.getPkDepartment())) {
-                            boolean sameDepartment = student.getPkDepartment().equals(teacher.getPkDepartment());
-                            if (!sameDepartment) return false;
-                        }
-                        
-                        // 验证审批级别
-                        return teacher.getApprovalLevel() != null 
-                            && teacher.getApprovalLevel() >= app.getCurrentApprovalLevel()
-                            && teacher.getCanApprove() != null 
-                            && teacher.getCanApprove() == 1;
-                    })
-                    .map(CertificateApplication::getPkCa)
-                    .toList();
-                
-                if (!validPkCaList.isEmpty()) {
-                    w2.in(CertificateApplication::getPkCa, validPkCaList);
-                } else {
-                    // 没有符合条件的，添加一个不可能的条件
-                    w2.eq(CertificateApplication::getPkCa, "IMPOSSIBLE");
-                }
-            })
+        
+        // 先查询第二级及以上的申请，过滤出符合条件的
+        List<CertificateApplication> secondLevelApps = applicationMapper.selectList(
+            new LambdaQueryWrapper<CertificateApplication>()
+                .in(CertificateApplication::getStatus, 
+                    ApplicationStatusConstant.PENDING, 
+                    ApplicationStatusConstant.IN_PROGRESS)
+                .ge(CertificateApplication::getCurrentApprovalLevel, 2)
         );
+        
+        // 过滤出符合条件的申请ID
+        List<String> secondLevelValidIds = secondLevelApps.stream()
+            .filter(app -> {
+                StudentInfo student = studentInfoMapper.selectById(app.getPkStudent());
+                if (student == null) return false;
+                
+                // 验证学院
+                boolean sameCollege = StringUtils.hasText(student.getPkCollege()) 
+                    && student.getPkCollege().equals(teacher.getPkCollege());
+                if (!sameCollege) return false;
+                
+                // 验证系别（如果学生有系别）
+                if (StringUtils.hasText(student.getPkDepartment())) {
+                    boolean sameDepartment = student.getPkDepartment().equals(teacher.getPkDepartment());
+                    if (!sameDepartment) return false;
+                }
+                
+                // 验证审批级别
+                return teacher.getApprovalLevel() != null 
+                    && teacher.getApprovalLevel() >= app.getCurrentApprovalLevel()
+                    && teacher.getCanApprove() != null 
+                    && teacher.getCanApprove() == 1;
+            })
+            .map(CertificateApplication::getPkCa)
+            .toList();
+        
+        // 构建查询条件：（第一级 OR 第二级）
+        wrapper.and(w -> {
+            // 情况1：第一级审批
+            w.and(w1 -> w1
+                .eq(CertificateApplication::getCurrentApprovalLevel, 1)
+                .eq(CertificateApplication::getPkTeacher, teacherId)
+            );
+            
+            // 情况2：第二级及以上（如果有符合条件的）
+            if (!secondLevelValidIds.isEmpty()) {
+                w.or(w2 -> w2.in(CertificateApplication::getPkCa, secondLevelValidIds));
+            }
+        });
 
         wrapper.orderByDesc(CertificateApplication::getUrgent)
                .orderByAsc(CertificateApplication::getCreateTime);
 
         IPage<CertificateApplication> applicationPage = applicationMapper.selectPage(page, wrapper);
-        return applicationPage.convert(this::convertToResponse);
+        
+        // 转换为响应DTO并填充学生信息
+        return applicationPage.convert(app -> {
+            ApplicationResponse response = convertToResponse(app);
+            
+            // 填充学生信息
+            StudentInfo student = studentInfoMapper.selectById(app.getPkStudent());
+            if (student != null) {
+                response.setStudentName(student.getName());
+                response.setStudentNo(student.getStudentNo());
+                response.setCollege(student.getCollege());
+                response.setMajor(student.getMajor());
+            }
+            
+            return response;
+        });
     }
 
     /**
@@ -298,5 +315,139 @@ public class CertificateApplicationServiceImpl implements CertificateApplication
         response.setTemplateContent(template.getTemplateContent());
         
         return response;
+    }
+    
+    @Override
+    public StatisticsResponse getStudentStatistics() {
+        String studentId = UserContextHolder.getStudentId();
+        
+        // 查询待审批数量（状态为待审批或审批中）
+        Long pendingCount = applicationMapper.selectCount(
+            new LambdaQueryWrapper<CertificateApplication>()
+                .eq(CertificateApplication::getPkStudent, studentId)
+                .in(CertificateApplication::getStatus, 
+                    ApplicationStatusConstant.PENDING, 
+                    ApplicationStatusConstant.IN_PROGRESS)
+        );
+        
+        // 查询已通过数量
+        Long approvedCount = applicationMapper.selectCount(
+            new LambdaQueryWrapper<CertificateApplication>()
+                .eq(CertificateApplication::getPkStudent, studentId)
+                .eq(CertificateApplication::getStatus, ApplicationStatusConstant.APPROVED)
+        );
+        
+        // 查询申请总数
+        Long totalCount = applicationMapper.selectCount(
+            new LambdaQueryWrapper<CertificateApplication>()
+                .eq(CertificateApplication::getPkStudent, studentId)
+        );
+        
+        return StatisticsResponse.builder()
+                .pendingCount(pendingCount)
+                .approvedCount(approvedCount)
+                .totalCount(totalCount)
+                .build();
+    }
+    
+    @Override
+    public StatisticsResponse getTeacherStatistics() {
+        String teacherId = UserContextHolder.getTeacherId();
+        String userId = UserContextHolder.getUserId();
+        
+        // 查询当前教师信息
+        TeacherInfo teacher = teacherInfoMapper.selectById(teacherId);
+        if (teacher == null) {
+            throw new BusinessException(ResultCode.TEACHER_NOT_FOUND);
+        }
+        
+        // 查询待审批数量（需要当前教师审批的申请）
+        // 第一级审批：指定给自己的
+        Long pendingCount = applicationMapper.selectCount(
+            new LambdaQueryWrapper<CertificateApplication>()
+                .in(CertificateApplication::getStatus, 
+                    ApplicationStatusConstant.PENDING, 
+                    ApplicationStatusConstant.IN_PROGRESS)
+                .eq(CertificateApplication::getCurrentApprovalLevel, 1)
+                .eq(CertificateApplication::getPkTeacher, teacherId)
+        );
+        
+        // 第二级及以上：需要遍历判断（这里简化处理，只统计可以看到的）
+        List<CertificateApplication> allPendingApps = applicationMapper.selectList(
+            new LambdaQueryWrapper<CertificateApplication>()
+                .in(CertificateApplication::getStatus, 
+                    ApplicationStatusConstant.PENDING, 
+                    ApplicationStatusConstant.IN_PROGRESS)
+                .ge(CertificateApplication::getCurrentApprovalLevel, 2)
+                .ge(CertificateApplication::getCurrentApprovalLevel, 2)
+        );
+        
+        // 过滤出符合条件的申请
+        long secondLevelCount = allPendingApps.stream()
+            .filter(app -> {
+                StudentInfo student = studentInfoMapper.selectById(app.getPkStudent());
+                if (student == null) return false;
+                
+                // 验证学院
+                boolean sameCollege = StringUtils.hasText(student.getPkCollege()) 
+                    && student.getPkCollege().equals(teacher.getPkCollege());
+                if (!sameCollege) return false;
+                
+                // 验证系别（如果学生有系别）
+                if (StringUtils.hasText(student.getPkDepartment())) {
+                    boolean sameDepartment = student.getPkDepartment().equals(teacher.getPkDepartment());
+                    if (!sameDepartment) return false;
+                }
+                
+                // 验证审批级别
+                return teacher.getApprovalLevel() != null 
+                    && teacher.getApprovalLevel() >= app.getCurrentApprovalLevel()
+                    && teacher.getCanApprove() != null 
+                    && teacher.getCanApprove() == 1;
+            })
+            .count();
+        
+        pendingCount += secondLevelCount;
+        
+        // 查询今日已审批数量
+        LocalDateTime todayStart = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+        Long todayApprovedCount = approvalRecordMapper.selectCount(
+            new LambdaQueryWrapper<ApprovalRecord>()
+                .eq(ApprovalRecord::getPkUser, userId)
+                .ge(ApprovalRecord::getApprovalTime, todayStart)
+        );
+        
+        // 查询总审批数
+        Long totalApprovalCount = approvalRecordMapper.selectCount(
+            new LambdaQueryWrapper<ApprovalRecord>()
+                .eq(ApprovalRecord::getPkUser, userId)
+        );
+        
+        return StatisticsResponse.builder()
+                .pendingCount(pendingCount)
+                .todayApprovedCount(todayApprovedCount)
+                .totalApprovalCount(totalApprovalCount)
+                .build();
+    }
+    
+    @Override
+    public List<Map<String, Object>> getAvailableTemplates() {
+        // 查询所有启用的模板，按排序字段排序
+        List<CertificateTemplate> templates = templateMapper.selectList(
+            new LambdaQueryWrapper<CertificateTemplate>()
+                .eq(CertificateTemplate::getIsActive, 1)
+                .orderByAsc(CertificateTemplate::getSortOrder)
+        );
+        
+        // 转换为前端需要的格式
+        return templates.stream()
+                .map(template -> {
+                    Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("value", template.getPkCt());
+                    map.put("label", template.getTemplateName());
+                    map.put("type", template.getTemplateType());
+                    return map;
+                })
+                .toList();
     }
 }

@@ -76,3 +76,43 @@ export const getAllApplications = (params?: any) => {
     params,
   })
 }
+
+// 统计数据接口
+export interface StatisticsResponse {
+  pendingCount?: number
+  approvedCount?: number
+  totalCount?: number
+  todayApprovedCount?: number
+  totalApprovalCount?: number
+}
+
+// 获取学生统计数据
+export const getStudentStatistics = () => {
+  return request<StatisticsResponse>({
+    url: '/application/statistics/student',
+    method: 'get',
+  })
+}
+
+// 获取教师统计数据
+export const getTeacherStatistics = () => {
+  return request<StatisticsResponse>({
+    url: '/application/statistics/teacher',
+    method: 'get',
+  })
+}
+
+// 证书模板接口
+export interface CertificateTemplate {
+  value: string
+  label: string
+  type: string
+}
+
+// 获取可用的证书模板列表
+export const getAvailableTemplates = () => {
+  return request<CertificateTemplate[]>({
+    url: '/application/templates',
+    method: 'get',
+  })
+}

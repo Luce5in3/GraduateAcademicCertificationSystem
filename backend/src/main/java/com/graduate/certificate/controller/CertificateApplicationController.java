@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.graduate.certificate.common.result.Result;
 import com.graduate.certificate.dto.application.ApplicationRequest;
 import com.graduate.certificate.dto.application.ApplicationResponse;
+import com.graduate.certificate.dto.application.StatisticsResponse;
 import com.graduate.certificate.service.CertificateApplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -76,5 +77,31 @@ public class CertificateApplicationController {
     public Result<ApplicationResponse> getCertificateDetail(@PathVariable String pkCa) {
         ApplicationResponse response = applicationService.getCertificateDetail(pkCa);
         return Result.success(response);
+    }
+    
+    /**
+     * 获取学生统计数据
+     */
+    @GetMapping("/statistics/student")
+    public Result<StatisticsResponse> getStudentStatistics() {
+        StatisticsResponse response = applicationService.getStudentStatistics();
+        return Result.success(response);
+    }
+    
+    /**
+     * 获取教师统计数据
+     */
+    @GetMapping("/statistics/teacher")
+    public Result<StatisticsResponse> getTeacherStatistics() {
+        StatisticsResponse response = applicationService.getTeacherStatistics();
+        return Result.success(response);
+    }
+    
+    /**
+     * 获取可用的证书模板列表
+     */
+    @GetMapping("/templates")
+    public Result<?> getAvailableTemplates() {
+        return Result.success(applicationService.getAvailableTemplates());
     }
 }

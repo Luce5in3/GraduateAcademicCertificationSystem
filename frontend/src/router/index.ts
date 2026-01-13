@@ -77,6 +77,13 @@ const routes: RouteRecordRaw[] = [
     name: 'NotFound',
     component: () => import('@/views/NotFound.vue'),
   },
+  // 证明预览页面（不嵌入布局，方便打印导出）
+  {
+    path: '/certificate-preview/:pkCa',
+    name: 'CertificatePreview',
+    component: () => import('@/views/student/CertificatePreview.vue'),
+    meta: { title: '证明预览', requiresAuth: true },
+  },
 ]
 
 const router = createRouter({
