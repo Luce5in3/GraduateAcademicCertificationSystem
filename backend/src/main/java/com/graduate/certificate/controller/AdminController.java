@@ -85,7 +85,6 @@ public class AdminController {
             @RequestParam(defaultValue = "1") int current,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Integer status) {
-        // TODO: Implement listAllApplications in applicationService
         return Result.success(applicationService.listAllApplications(current, size, status));
     }
 }
