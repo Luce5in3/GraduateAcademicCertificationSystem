@@ -70,6 +70,31 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/teacher/Profile.vue'),
         meta: { title: '个人信息', requiresAuth: true, roles: [2] },
       },
+      // 管理员端路由
+      {
+        path: 'admin/templates',
+        name: 'AdminTemplates',
+        component: () => import('@/views/admin/TemplateManagement.vue'),
+        meta: { title: '证明模板管理', requiresAuth: true, roles: [3] },
+      },
+      {
+        path: 'admin/students',
+        name: 'AdminStudents',
+        component: () => import('@/views/admin/StudentManagement.vue'),
+        meta: { title: '学生信息管理', requiresAuth: true, roles: [3] },
+      },
+      {
+        path: 'admin/teachers',
+        name: 'AdminTeachers',
+        component: () => import('@/views/admin/TeacherManagement.vue'),
+        meta: { title: '教师信息管理', requiresAuth: true, roles: [3] },
+      },
+      {
+        path: 'admin/applications',
+        name: 'AdminApplications',
+        component: () => import('@/views/admin/AllApplications.vue'),
+        meta: { title: '全站申请记录', requiresAuth: true, roles: [3] },
+      },
     ],
   },
   {

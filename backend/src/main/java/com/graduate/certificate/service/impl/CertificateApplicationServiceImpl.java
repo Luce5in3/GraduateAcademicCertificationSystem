@@ -81,10 +81,14 @@ public class CertificateApplicationServiceImpl implements CertificateApplication
             throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "学生信息不存在");
         }
         
-        // 使用学生的导师作为第一级审批人（导师默认为导员）
-        String firstApprover = studentInfo.getPkTeacher();
-        if (!StringUtils.hasText(firstApprover)) {
-            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "未配置导师，无法提交申请");
+        // 解析审批等级
+        int targetLevel = 1;
+        try {
+            if (StringUtils.hasText(template.getApprovalFlow())) {
+                targetLevel = Integer.parseInt(template.getApprovalFlow().trim());
+            }
+        } catch (NumberFormatException e) {
+            log.error("解析审批流程配置等级失败: {}, 默认使用1级", template.getApprovalFlow());
         }
 
         // 创建申请
@@ -98,8 +102,15 @@ public class CertificateApplicationServiceImpl implements CertificateApplication
         application.setApplicationReason(request.getApplicationReason());
         application.setApplicationData(request.getApplicationData());
         application.setStatus(ApplicationStatusConstant.PENDING);
-        application.setCurrentApprovalLevel(1); // 第一级：导师
-        application.setPkTeacher(firstApprover); // 设置第一级审批人
+        application.setCurrentApprovalLevel(targetLevel); // 直接设置为目标审批等级
+        
+        // 只有1级审批才指定特定导师，2级及以上不指定（让符合等级的老师都能审批）
+        if (targetLevel == 1) {
+            application.setPkTeacher(studentInfo.getPkTeacher());
+        } else {
+            application.setPkTeacher(null);
+        }
+        
         application.setCopies(request.getCopies() != null ? request.getCopies() : 1);
         application.setUrgent(request.getUrgent() != null ? request.getUrgent() : 0);
 
@@ -209,9 +220,9 @@ public class CertificateApplicationServiceImpl implements CertificateApplication
                     if (!sameDepartment) return false;
                 }
                 
-                // 验证审批级别
+                // 关键修改：审批级别必须等于当前级别，不能是大于等于
                 return teacher.getApprovalLevel() != null 
-                    && teacher.getApprovalLevel() >= app.getCurrentApprovalLevel()
+                    && teacher.getApprovalLevel() == app.getCurrentApprovalLevel()  // 从 >= 改为 ==
                     && teacher.getCanApprove() != null 
                     && teacher.getCanApprove() == 1;
             })
@@ -399,9 +410,9 @@ public class CertificateApplicationServiceImpl implements CertificateApplication
                     if (!sameDepartment) return false;
                 }
                 
-                // 验证审批级别
+                // 关键修改：审批级别必须等于当前级别
                 return teacher.getApprovalLevel() != null 
-                    && teacher.getApprovalLevel() >= app.getCurrentApprovalLevel()
+                    && teacher.getApprovalLevel() == app.getCurrentApprovalLevel()  // 从 >= 改为 ==
                     && teacher.getCanApprove() != null 
                     && teacher.getCanApprove() == 1;
             })
@@ -431,6 +442,32 @@ public class CertificateApplicationServiceImpl implements CertificateApplication
     }
     
     @Override
+    public StatisticsResponse getAdminStatistics() {
+        // 全站待审批
+        Long pendingCount = applicationMapper.selectCount(
+                new LambdaQueryWrapper<CertificateApplication>()
+                        .in(CertificateApplication::getStatus,
+                                ApplicationStatusConstant.PENDING,
+                                ApplicationStatusConstant.IN_PROGRESS)
+        );
+    
+        // 全站已通过
+        Long approvedCount = applicationMapper.selectCount(
+                new LambdaQueryWrapper<CertificateApplication>()
+                        .eq(CertificateApplication::getStatus, ApplicationStatusConstant.APPROVED)
+        );
+    
+        // 全站总申请
+        Long totalCount = applicationMapper.selectCount(null);
+    
+        return StatisticsResponse.builder()
+                .pendingCount(pendingCount)
+                .approvedCount(approvedCount)
+                .totalCount(totalCount)
+                .build();
+    }
+    
+    @Override
     public List<Map<String, Object>> getAvailableTemplates() {
         // 查询所有启用的模板，按排序字段排序
         List<CertificateTemplate> templates = templateMapper.selectList(
@@ -449,5 +486,29 @@ public class CertificateApplicationServiceImpl implements CertificateApplication
                     return map;
                 })
                 .toList();
+    }
+
+    @Override
+    public IPage<ApplicationResponse> listAllApplications(int current, int size, Integer status) {
+        Page<CertificateApplication> page = new Page<>(current, size);
+        LambdaQueryWrapper<CertificateApplication> wrapper = new LambdaQueryWrapper<>();
+        if (status != null) {
+            wrapper.eq(CertificateApplication::getStatus, status);
+        }
+        wrapper.orderByDesc(CertificateApplication::getCreateTime);
+        
+        IPage<CertificateApplication> applicationPage = applicationMapper.selectPage(page, wrapper);
+        return applicationPage.convert(app -> {
+            ApplicationResponse response = convertToResponse(app);
+            // 填充学生信息
+            StudentInfo student = studentInfoMapper.selectById(app.getPkStudent());
+            if (student != null) {
+                response.setStudentName(student.getName());
+                response.setStudentNo(student.getStudentNo());
+                response.setCollege(student.getCollege());
+                response.setMajor(student.getMajor());
+            }
+            return response;
+        });
     }
 }

@@ -108,6 +108,11 @@ export const useUserStore = defineStore('user', () => {
     return userInfo.value?.userType === 2
   }
 
+  // 判断是否为管理员
+  const isAdmin = () => {
+    return userInfo.value?.userType === 3
+  }
+
   return {
     token,
     userInfo,
@@ -116,5 +121,6 @@ export const useUserStore = defineStore('user', () => {
     getUserType,
     isStudent,
     isTeacher,
+    isAdmin,
   }
 })

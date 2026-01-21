@@ -16,20 +16,20 @@
       <el-table :data="tableData" v-loading="loading" border stripe>
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="studentName" label="学生姓名" width="120" align="center" />
-        <el-table-column prop="studentId" label="学号" width="150" align="center" />
+        <el-table-column prop="studentNo" label="学号" width="150" align="center" />
         <el-table-column prop="certificateType" label="证书类型" width="150" align="center" />
-        <el-table-column prop="quantity" label="申请份数" width="100" align="center">
+        <el-table-column prop="copies" label="申请份数" width="100" align="center">
           <template #default="{ row }">
-            {{ row.quantity || 1 }} 份
+            {{ row.copies || 1 }} 份
           </template>
         </el-table-column>
-        <el-table-column prop="isUrgent" label="是否加急" width="100" align="center">
+        <el-table-column prop="urgent" label="是否加急" width="100" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.isUrgent" type="danger" size="small" effect="dark">加急</el-tag>
+            <el-tag v-if="row.urgent === 1" type="danger" size="small" effect="dark">加急</el-tag>
             <el-tag v-else type="info" size="small">普通</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="reason" label="申请理由" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="applicationReason" label="申请理由" min-width="200" show-overflow-tooltip />
         <el-table-column prop="createTime" label="申请时间" width="180" align="center" />
         <el-table-column label="操作" width="220" fixed="right" align="center">
           <template #default="{ row }">
@@ -87,13 +87,14 @@
         <el-form-item label="申请信息">
           <el-descriptions :column="1" border>
             <el-descriptions-item label="学生姓名">{{ currentApplication?.studentName }}</el-descriptions-item>
-            <el-descriptions-item label="学号">{{ currentApplication?.studentId }}</el-descriptions-item>
+            <el-descriptions-item label="学号">{{ currentApplication?.studentNo }}</el-descriptions-item>
             <el-descriptions-item label="证书类型">{{ currentApplication?.certificateType }}</el-descriptions-item>
-            <el-descriptions-item label="申请份数">{{ currentApplication?.quantity || 1 }} 份</el-descriptions-item>
+            <el-descriptions-item label="申请份数">{{ currentApplication?.copies || 1 }} 份</el-descriptions-item>
             <el-descriptions-item label="是否加急">
-              <el-tag v-if="currentApplication?.isUrgent" type="danger" size="small">加急</el-tag>
+              <el-tag v-if="currentApplication?.urgent === 1" type="danger" size="small">加急</el-tag>
               <el-tag v-else type="info" size="small">普通</el-tag>
             </el-descriptions-item>
+            <el-descriptions-item label="申请理由">{{ currentApplication?.applicationReason || '无' }}</el-descriptions-item>
           </el-descriptions>
         </el-form-item>
         <el-form-item label="审批结果">
@@ -191,7 +192,7 @@ const fetchData = async () => {
 
 const handleApprove = (row: any, result: number) => {
   currentApplication.value = row
-  approvalForm.applicationId = row.id
+  approvalForm.applicationId = row.pkCa  // 使用 pkCa 而不是 id
   approvalForm.result = result
   approvalForm.comment = ''
   dialogVisible.value = true
@@ -199,7 +200,7 @@ const handleApprove = (row: any, result: number) => {
 
 const handleReject = (row: any) => {
   currentApplication.value = row
-  approvalForm.applicationId = row.id
+  approvalForm.applicationId = row.pkCa  // 使用 pkCa 而不是 id
   approvalForm.result = 0
   approvalForm.comment = ''
   dialogVisible.value = true
@@ -229,7 +230,13 @@ const submitApprovalConfirm = async () => {
     )
     
     submitting.value = true
-    const res: any = await submitApproval(approvalForm)
+    // 将前端字段映射为后端期望的字段
+    const requestData = {
+      pkCa: approvalForm.applicationId,
+      approvalResult: approvalForm.result,
+      approvalOpinion: approvalForm.comment
+    }
+    const res: any = await submitApproval(requestData)
     if (res.code === 200) {
       ElMessage.success('审批成功')
       dialogVisible.value = false
