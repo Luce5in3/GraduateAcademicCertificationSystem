@@ -3,9 +3,10 @@ import request from './request'
 // 审批相关接口
 
 export interface ApprovalRequest {
-  applicationId: string
-  result: number
-  comment?: string
+  pkCa: string              // 申请主键
+  approvalResult: number    // 审批结果：1-通过 2-拒绝 3-退回
+  approvalOpinion?: string  // 审批意见
+  attachmentUrl?: string    // 附件URL
 }
 
 // 提交审批

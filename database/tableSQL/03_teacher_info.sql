@@ -10,7 +10,7 @@ CREATE TABLE `teacher_info`
     `department`     varchar(100) DEFAULT NULL COMMENT '所属部门',
     `title`          varchar(50)  DEFAULT NULL COMMENT '职称：教授/副教授/讲师等',
     `position`       varchar(50)  DEFAULT NULL COMMENT '职位：院长/系主任/辅导员等',
-    `approval_level` tinyint      DEFAULT '1' COMMENT '审批级别：1-初审 2-复审 ',
+    `approval_level` tinyint      DEFAULT '1' COMMENT '审批级别：1-辅导员 2-学院 3-学校',
     `can_approve`    tinyint      DEFAULT '1' COMMENT '是否有审批权限：0-否 1-是',
     `create_time`    datetime     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time`    datetime     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

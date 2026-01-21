@@ -52,9 +52,19 @@ public interface CertificateApplicationService {
      * 获取教师统计数据
      */
     StatisticsResponse getTeacherStatistics();
+
+    /**
+     * 获取全站统计数据（管理员用）
+     */
+    StatisticsResponse getAdminStatistics();
     
     /**
      * 获取可用的证书模板列表
      */
     List<Map<String, Object>> getAvailableTemplates();
+
+    /**
+     * 查询全站申请记录（管理员用）
+     */
+    IPage<ApplicationResponse> listAllApplications(int current, int size, Integer status);
 }

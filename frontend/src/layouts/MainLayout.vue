@@ -82,6 +82,26 @@
                 <span>个人信息</span>
               </el-menu-item>
             </template>
+
+            <!-- 管理员菜单 -->
+            <template v-if="userStore.isAdmin()">
+              <el-menu-item index="/admin/templates">
+                <el-icon><DocumentCopy /></el-icon>
+                <span>证明模板管理</span>
+              </el-menu-item>
+              <el-menu-item index="/admin/students">
+                <el-icon><User /></el-icon>
+                <span>学生信息管理</span>
+              </el-menu-item>
+              <el-menu-item index="/admin/teachers">
+                <el-icon><Avatar /></el-icon>
+                <span>教师信息管理</span>
+              </el-menu-item>
+              <el-menu-item index="/admin/applications">
+                <el-icon><Files /></el-icon>
+                <span>全站申请记录</span>
+              </el-menu-item>
+            </template>
           </el-menu>
         </el-aside>
 
@@ -98,7 +118,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
-import { HomeFilled, DocumentAdd, List, User, Check, Setting, SwitchButton } from '@element-plus/icons-vue'
+import { HomeFilled, DocumentAdd, List, User, Check, Setting, SwitchButton, DocumentCopy, Avatar, Files, Operation } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -107,14 +127,19 @@ const userStore = useUserStore()
 const activeMenu = computed(() => route.path)
 
 const userRoleText = computed(() => {
-  return userStore.isStudent() ? '学生' : userStore.isTeacher() ? '教师' : '用户'
+  if (userStore.isAdmin()) return '管理员'
+  if (userStore.isTeacher()) return '教师'
+  if (userStore.isStudent()) return '学生'
+  return '用户'
 })
 
 const handleCommand = (command: string) => {
   if (command === 'logout') {
     handleLogout()
   } else if (command === 'profile') {
-    const profilePath = userStore.isStudent() ? '/student/profile' : '/teacher/profile'
+    let profilePath = '/dashboard'
+    if (userStore.isStudent()) profilePath = '/student/profile'
+    else if (userStore.isTeacher()) profilePath = '/teacher/profile'
     router.push(profilePath)
   }
 }

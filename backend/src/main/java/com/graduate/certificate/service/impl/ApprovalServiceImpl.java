@@ -100,10 +100,14 @@ public class ApprovalServiceImpl implements ApprovalService {
      * 验证审批权限
      * 规则：
      * 1. 第一级审批：必须是指定的导师（pkTeacher）
-     * 2. 第二级及以上：同学院、同系别、审批级别足够的老师都可以审批
+     * 2. 第二级及以上：必须是当前级别的审批人（approval_level 等于 currentLevel）
      */
     private void validateApprovalPermission(CertificateApplication application, TeacherInfo teacher) {
         int currentLevel = application.getCurrentApprovalLevel();
+        
+        log.info("验证审批权限: pkCa={}, currentLevel={}, teacherId={}, teacherApprovalLevel={}, teacherName={}",
+            application.getPkCa(), currentLevel, teacher.getPkTeacher(), 
+            teacher.getApprovalLevel(), teacher.getName());
         
         // 第一级审批：必须是指定的审批人
         if (currentLevel == 1) {
@@ -111,6 +115,7 @@ public class ApprovalServiceImpl implements ApprovalService {
                 throw new BusinessException(ResultCode.APPROVAL_NO_PERMISSION.getCode(), 
                     "第一级审批必须由指定的导师完成");
             }
+            log.info("第一级审批权限验证通过");
             return;
         }
 
@@ -134,10 +139,11 @@ public class ApprovalServiceImpl implements ApprovalService {
                 "只能审批本系的申请");
         }
 
-        // 验证审批级别
-        if (teacher.getApprovalLevel() == null || teacher.getApprovalLevel() < currentLevel) {
+        // 关键修改：审批级别必须等于当前级别，不能是大于
+        if (teacher.getApprovalLevel() == null || teacher.getApprovalLevel() != currentLevel) {
             throw new BusinessException(ResultCode.APPROVAL_NO_PERMISSION.getCode(), 
-                "审批级别不足，无法审批");
+                String.format("您的审批级别为%d，不能审批第%d级的申请", 
+                    teacher.getApprovalLevel(), currentLevel));
         }
 
         // 验证是否有审批权限
@@ -145,6 +151,8 @@ public class ApprovalServiceImpl implements ApprovalService {
             throw new BusinessException(ResultCode.APPROVAL_NO_PERMISSION.getCode(), 
                 "您没有审批权限");
         }
+        
+        log.info("第{}\u7ea7审批权限验证通过", currentLevel);
     }
 
     /**
@@ -177,33 +185,17 @@ public class ApprovalServiceImpl implements ApprovalService {
     /**
      * 处理审批通过
      * 逻辑：
-     * 1. 获取模板的审批流程配置
-     * 2. 判断是否还有下一级审批
-     * 3. 如果有下一级，设置状态为审批中，清空pkTeacher（让符合条件的老师都能看到）
-     * 4. 如果没有下一级，设置状态为已通过
+     * 1. 变更为单级直接审批逻辑
+     * 2. 一旦当前级别教师审批通过，申请即标记为最终已通过
      */
     private void handleApproved(CertificateApplication application, TeacherInfo currentTeacher) {
-        // 查询模板获取审批流程
-        CertificateTemplate template = templateMapper.selectById(application.getPkCt());
-        if (template == null) {
-            throw new BusinessException(ResultCode.TEMPLATE_NOT_FOUND);
-        }
+        log.info("审批通过处理: pkCa={}, 当前级别={}, 审批教师={}",
+            application.getPkCa(), application.getCurrentApprovalLevel(), currentTeacher.getName());
 
-        int maxLevel = getMaxApprovalLevel(template);
-        int currentLevel = application.getCurrentApprovalLevel();
-
-        if (currentLevel >= maxLevel) {
-            // 已经是最后一级，审批通过
-            application.setStatus(ApplicationStatusConstant.APPROVED);
-            application.setCompleteTime(LocalDateTime.now());
-            application.setPkTeacher(null);
-        } else {
-            // 进入下一级审批
-            application.setStatus(ApplicationStatusConstant.IN_PROGRESS);
-            application.setCurrentApprovalLevel(currentLevel + 1);
-            // 第二级及以上清空pkTeacher，让符合条件的老师都能审批
-            application.setPkTeacher(null);
-        }
+        // 单级直接审批：审批即通过
+        application.setStatus(ApplicationStatusConstant.APPROVED);
+        application.setCompleteTime(LocalDateTime.now());
+        application.setPkTeacher(null);
         
         applicationMapper.updateById(application);
     }
@@ -221,13 +213,13 @@ public class ApprovalServiceImpl implements ApprovalService {
 
     /**
      * 处理审批退回
+     * 逻辑：变更为退回到当前级别的初始状态，不再逐级退回
      */
     private void handleReturned(CertificateApplication application) {
-        if (application.getCurrentApprovalLevel() > 1) {
-            application.setCurrentApprovalLevel(application.getCurrentApprovalLevel() - 1);
-        }
+        log.info("审批退回处理: pkCa={}, 当前级别={}", application.getPkCa(), application.getCurrentApprovalLevel());
+        
         application.setStatus(ApplicationStatusConstant.PENDING);
-        // 退回到第一级时，恢复导师
+        // 如果是1级审批，保留/恢复导师指定；2级及以上保持pkTeacher为空
         if (application.getCurrentApprovalLevel() == 1) {
             StudentInfo student = studentInfoMapper.selectById(application.getPkStudent());
             if (student != null) {
@@ -240,23 +232,19 @@ public class ApprovalServiceImpl implements ApprovalService {
     }
 
     /**
-     * 从模板中获取最大审批级别
-     * approvalFlow格式: {"levels":[{"level":1,"name":"导师审批"},{"level":2,"name":"系主任审批"}]}
+     * 从模板中获取审批级别
+     * approvalFlow已变更为直接定义审批等级（如 "1", "2", "3"）
      */
     private int getMaxApprovalLevel(CertificateTemplate template) {
         if (!StringUtils.hasText(template.getApprovalFlow())) {
-            return 1; // 默认只有一级
+            return 1; // 默认一级
         }
 
         try {
-            JSONObject flowJson = JSON.parseObject(template.getApprovalFlow());
-            JSONArray levels = flowJson.getJSONArray("levels");
-            if (levels == null || levels.isEmpty()) {
-                return 1;
-            }
-            return levels.size();
-        } catch (Exception e) {
-            log.error("解析审批流程配置失败: {}", template.getApprovalFlow(), e);
+            // 尝试直接解析为数字
+            return Integer.parseInt(template.getApprovalFlow().trim());
+        } catch (NumberFormatException e) {
+            log.error("解析审批流程配置等级失败: {}, 默认使用1级", template.getApprovalFlow());
             return 1;
         }
     }

@@ -17,6 +17,44 @@
 
     <!-- 统计卡片 -->
     <div class="stats-cards">
+      <template v-if="userStore.isAdmin()">
+        <el-card class="stat-card stat-card-primary" shadow="hover" v-loading="loading">
+          <div class="stat-content">
+            <div class="stat-info">
+              <div class="stat-label">全站申请总数</div>
+              <div class="stat-value">{{ statistics.totalCount || 0 }}</div>
+            </div>
+            <el-icon :size="50" class="stat-icon">
+              <Files />
+            </el-icon>
+          </div>
+        </el-card>
+
+        <el-card class="stat-card stat-card-success" shadow="hover" v-loading="loading">
+          <div class="stat-content">
+            <div class="stat-info">
+              <div class="stat-label">已通过证明</div>
+              <div class="stat-value">{{ statistics.approvedCount || 0 }}</div>
+            </div>
+            <el-icon :size="50" class="stat-icon">
+              <CircleCheck />
+            </el-icon>
+          </div>
+        </el-card>
+
+        <el-card class="stat-card stat-card-warning" shadow="hover" v-loading="loading">
+          <div class="stat-content">
+            <div class="stat-info">
+              <div class="stat-label">待审批总数</div>
+              <div class="stat-value">{{ statistics.pendingCount || 0 }}</div>
+            </div>
+            <el-icon :size="50" class="stat-icon">
+              <Clock />
+            </el-icon>
+          </div>
+        </el-card>
+      </template>
+
       <template v-if="userStore.isStudent()">
         <el-card class="stat-card stat-card-primary" shadow="hover" v-loading="loading">
           <div class="stat-content">
@@ -107,18 +145,18 @@
           <div class="profile-card">
             <el-avatar :size="80" icon="UserFilled" class="profile-avatar" />
             <div class="profile-info">
-              <h3>{{ userStore.userInfo?.username }}</h3>
+              <h3>{{ userStore.userInfo?.realName || userStore.userInfo?.username }}</h3>
               <div class="info-item">
                 <el-icon><User /></el-icon>
                 <span>{{ userTypeText }}</span>
               </div>
               <div class="info-item" v-if="userStore.isStudent()">
                 <el-icon><Postcard /></el-icon>
-                <span>学号：{{ userStore.userInfo?.studentId || '未设置' }}</span>
+                <span>学号：{{ userStore.userInfo?.username || '未设置' }}</span>
               </div>
               <div class="info-item" v-if="userStore.isTeacher()">
                 <el-icon><Postcard /></el-icon>
-                <span>工号：{{ userStore.userInfo?.teacherId || '未设置' }}</span>
+                <span>工号：{{ userStore.userInfo?.username || '未设置' }}</span>
               </div>
             </div>
           </div>
@@ -180,6 +218,30 @@
                 </div>
               </div>
             </template>
+
+            <template v-if="userStore.isAdmin()">
+              <div class="action-item" @click="router.push('/admin/templates')">
+                <el-icon :size="32" color="#1677FF"><DocumentCopy /></el-icon>
+                <div class="action-text">
+                  <h4>证明模板管理</h4>
+                  <p>维护系统证明模板</p>
+                </div>
+              </div>
+              <div class="action-item" @click="router.push('/admin/students')">
+                <el-icon :size="32" color="#67c23a"><User /></el-icon>
+                <div class="action-text">
+                  <h4>学生信息管理</h4>
+                  <p>查看全站学生资料</p>
+                </div>
+              </div>
+              <div class="action-item" @click="router.push('/admin/applications')">
+                <el-icon :size="32" color="#f56c6c"><Files /></el-icon>
+                <div class="action-text">
+                  <h4>全站申请记录</h4>
+                  <p>查看所有证明申请</p>
+                </div>
+              </div>
+            </template>
           </div>
         </el-card>
       </el-col>
@@ -196,6 +258,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { getStudentStatistics, getTeacherStatistics, type StatisticsResponse } from '@/api/application'
+import { getAdminStatistics } from '@/api/admin'
 import { ElMessage } from 'element-plus'
 import { 
   DocumentAdd, 
@@ -210,7 +273,9 @@ import {
   DataAnalysis,
   Document as DocumentIcon,
   Postcard,
-  ArrowRight
+  ArrowRight,
+  Files,
+  Operation
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -224,6 +289,7 @@ const loading = ref(false)
 
 const userTypeText = computed(() => {
   const type = userStore.getUserType()
+  if (type === 3) return '管理员'
   return type === 1 ? '学生' : type === 2 ? '教师' : '未知'
 })
 
@@ -239,6 +305,7 @@ const currentDate = computed(() => {
 })
 
 const handleGoProfile = () => {
+  if (userStore.isAdmin()) return
   const profilePath = userStore.isStudent() ? '/student/profile' : '/teacher/profile'
   router.push(profilePath)
 }
@@ -247,12 +314,14 @@ const handleGoProfile = () => {
 const loadStatistics = async () => {
   try {
     loading.value = true
-    let response
+    let response: any
     
     if (userStore.isStudent()) {
       response = await getStudentStatistics()
     } else if (userStore.isTeacher()) {
       response = await getTeacherStatistics()
+    } else if (userStore.isAdmin()) {
+      response = await getAdminStatistics()
     } else {
       return
     }
