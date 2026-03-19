@@ -4,19 +4,30 @@
       <!-- 头部 -->
       <el-header>
         <div class="header-content">
-          <div class="logo-area">
-            <h2>🎓 毕业学术证书管理系统</h2>
+          <div class="header-left">
+            <el-button
+              v-if="isMobile"
+              type="text"
+              @click="toggleSidebar"
+              class="sidebar-toggle"
+            >
+              <el-icon :size="24"><Menu /></el-icon>
+            </el-button>
+            <div class="logo-area">
+              <h2 v-if="!isMobile">🎓 毕业学术证书管理系统</h2>
+              <h2 v-else>🎓 证书系统</h2>
+            </div>
           </div>
           <div class="header-right">
             <div class="user-info">
-              <el-avatar :size="36" icon="UserFilled" />
-              <div class="user-details">
+              <el-avatar :size="isMobile ? 32 : 36" icon="UserFilled" />
+              <div class="user-details" v-if="!isMobile">
                 <span class="username">{{ userStore.userInfo?.username }}</span>
                 <span class="user-role">{{ userRoleText }}</span>
               </div>
             </div>
             <el-dropdown trigger="click" @command="handleCommand">
-              <el-button circle>
+              <el-button circle :size="isMobile ? 'default' : 'large'">
                 <el-icon><Setting /></el-icon>
               </el-button>
               <template #dropdown>
@@ -38,32 +49,41 @@
 
       <el-container>
         <!-- 侧边栏 -->
-        <el-aside width="200px">
+        <el-aside :width="isSidebarCollapsed ? '64px' : '200px'" class="sidebar">
           <el-menu
             :default-active="activeMenu"
             router
             background-color="#304156"
             text-color="#bfcbd9"
             active-text-color="#409eff"
+            :collapse="isSidebarCollapsed"
           >
             <el-menu-item index="/dashboard">
               <el-icon><HomeFilled /></el-icon>
-              <span>首页</span>
+              <template #title>
+                <span>首页</span>
+              </template>
             </el-menu-item>
 
             <!-- 学生菜单 -->
             <template v-if="userStore.isStudent()">
               <el-menu-item index="/student/application">
                 <el-icon><DocumentAdd /></el-icon>
-                <span>证书申请</span>
+                <template #title>
+                  <span>证书申请</span>
+                </template>
               </el-menu-item>
               <el-menu-item index="/student/my-applications">
                 <el-icon><List /></el-icon>
-                <span>我的申请</span>
+                <template #title>
+                  <span>我的申请</span>
+                </template>
               </el-menu-item>
               <el-menu-item index="/student/profile">
                 <el-icon><User /></el-icon>
-                <span>个人信息</span>
+                <template #title>
+                  <span>个人信息</span>
+                </template>
               </el-menu-item>
             </template>
 
@@ -71,15 +91,21 @@
             <template v-if="userStore.isTeacher()">
               <el-menu-item index="/teacher/approval">
                 <el-icon><Check /></el-icon>
-                <span>审批管理</span>
+                <template #title>
+                  <span>审批管理</span>
+                </template>
               </el-menu-item>
               <el-menu-item index="/teacher/applications">
                 <el-icon><List /></el-icon>
-                <span>申请列表</span>
+                <template #title>
+                  <span>申请列表</span>
+                </template>
               </el-menu-item>
               <el-menu-item index="/teacher/profile">
                 <el-icon><User /></el-icon>
-                <span>个人信息</span>
+                <template #title>
+                  <span>个人信息</span>
+                </template>
               </el-menu-item>
             </template>
 
@@ -87,19 +113,27 @@
             <template v-if="userStore.isAdmin()">
               <el-menu-item index="/admin/templates">
                 <el-icon><DocumentCopy /></el-icon>
-                <span>证明模板管理</span>
+                <template #title>
+                  <span>证明模板管理</span>
+                </template>
               </el-menu-item>
               <el-menu-item index="/admin/students">
                 <el-icon><User /></el-icon>
-                <span>学生信息管理</span>
+                <template #title>
+                  <span>学生信息管理</span>
+                </template>
               </el-menu-item>
               <el-menu-item index="/admin/teachers">
                 <el-icon><Avatar /></el-icon>
-                <span>教师信息管理</span>
+                <template #title>
+                  <span>教师信息管理</span>
+                </template>
               </el-menu-item>
               <el-menu-item index="/admin/applications">
                 <el-icon><Files /></el-icon>
-                <span>全站申请记录</span>
+                <template #title>
+                  <span>全站申请记录</span>
+                </template>
               </el-menu-item>
             </template>
           </el-menu>
@@ -115,14 +149,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
-import { HomeFilled, DocumentAdd, List, User, Check, Setting, SwitchButton, DocumentCopy, Avatar, Files, Operation } from '@element-plus/icons-vue'
+import { HomeFilled, DocumentAdd, List, User, Check, Setting, SwitchButton, DocumentCopy, Avatar, Files, Menu } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+
+const isSidebarCollapsed = ref(false)
+const isMobile = ref(false)
 
 const activeMenu = computed(() => route.path)
 
@@ -147,12 +184,35 @@ const handleCommand = (command: string) => {
 const handleLogout = () => {
   userStore.logout()
 }
+
+const toggleSidebar = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+}
+
+const checkScreenSize = () => {
+  isMobile.value = window.innerWidth < 768
+  if (isMobile.value) {
+    isSidebarCollapsed.value = true
+  } else {
+    isSidebarCollapsed.value = false
+  }
+}
+
+onMounted(() => {
+  checkScreenSize()
+  window.addEventListener('resize', checkScreenSize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkScreenSize)
+})
 </script>
 
 <style scoped>
 .main-layout {
   height: 100vh;
-  min-width: 1200px; /* 确保PC端最小宽度 */
+  width: 100%;
+  overflow: hidden;
 }
 
 .el-container {
@@ -160,11 +220,11 @@ const handleLogout = () => {
 }
 
 .el-header {
-  background: linear-gradient(135deg, #1677FF 0%, #0050B3 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-active) 100%);
   color: white;
   line-height: 60px;
-  padding: 0 30px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 0 var(--spacing-md);
+  box-shadow: var(--shadow-sm);
   z-index: 1000;
 }
 
@@ -174,40 +234,54 @@ const handleLogout = () => {
   align-items: center;
 }
 
-.header-content h2 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+.header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.sidebar-toggle {
+  color: white;
+  font-size: 20px;
 }
 
 .logo-area {
   flex: 1;
 }
 
+.header-content h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--transition-normal);
+}
+
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--spacing-md);
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-sm);
   padding: 8px 16px;
   background-color: rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   backdrop-filter: blur(10px);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-normal);
 }
 
 .user-info:hover {
   background-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
 }
 
 .user-details {
@@ -226,29 +300,33 @@ const handleLogout = () => {
   opacity: 0.85;
 }
 
-.el-aside {
+.sidebar {
   background-color: #304156;
   overflow-x: hidden;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  transition: all var(--transition-normal);
 }
 
 .el-main {
-  background-color: #F5F7FA;
-  padding: 24px;
+  background-color: var(--bg-color);
+  padding: var(--spacing-lg);
   overflow-y: auto;
   min-height: calc(100vh - 60px);
+  transition: all var(--transition-normal);
 }
 
 .el-menu {
   border-right: none;
   height: 100%;
+  transition: all var(--transition-normal);
 }
 
 :deep(.el-menu-item) {
   height: 56px;
   line-height: 56px;
   margin: 4px 8px;
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition-normal);
 }
 
 :deep(.el-menu-item:hover) {
@@ -256,6 +334,51 @@ const handleLogout = () => {
 }
 
 :deep(.el-menu-item.is-active) {
-  background-color: #1677FF !important;
+  background-color: var(--primary-color) !important;
   color: #fff !important;
-}</style>
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .el-header {
+    padding: 0 var(--spacing-sm);
+  }
+  
+  .header-content h2 {
+    font-size: 16px;
+  }
+  
+  .user-info {
+    padding: 6px 12px;
+  }
+  
+  .el-main {
+    padding: var(--spacing-md);
+  }
+  
+  .sidebar {
+    position: fixed;
+    height: 100%;
+    z-index: 999;
+    transition: all var(--transition-normal);
+  }
+  
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content h2 {
+    font-size: 14px;
+  }
+  
+  .user-info {
+    padding: 4px 8px;
+  }
+  
+  .el-main {
+    padding: var(--spacing-sm);
+  }
+}
+</style>

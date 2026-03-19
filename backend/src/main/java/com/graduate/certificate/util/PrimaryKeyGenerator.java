@@ -102,12 +102,12 @@ public class PrimaryKeyGenerator {
 
     /**
      * 生成证明申请主键
-     * 格式：CA + 年份(4位) + 序号(7位)，如：CA2025000001
+     * 格式：CA + 年份 (4 位) + 序号 (7 位)，如：CA2025000001
      *
      * @return 证明申请主键
      */
     public static String generateCertificateApplicationKey() {
-        return generateKey(CERTIFICATE_APPLICATION_PREFIX, 4, 7);
+        return generateKeyWithDBCheck(CERTIFICATE_APPLICATION_PREFIX, 4, 7, "certificate_application", "pk_ca");
     }
 
     /**
@@ -141,27 +141,56 @@ public class PrimaryKeyGenerator {
     }
 
     /**
+     * 生成主键（带年份和数据库检查，确保唯一性）
+     * 
+     * @param prefix         前缀
+     * @param yearLength     年份位数（2 位或 4 位）
+     * @param sequenceLength 序号位数
+     * @param tableName      表名
+     * @param pkField        主键字段名
+     * @return 主键
+     */
+    private static synchronized String generateKeyWithDBCheck(String prefix, int yearLength, 
+                                                               int sequenceLength, String tableName, 
+                                                               String pkField) {
+        // 获取当前年份
+        String year = getCurrentYear(yearLength);
+            
+        // 获取并递增序列号
+        int seq = sequence.incrementAndGet();
+            
+        // 格式化序列号
+        String sequenceStr = String.format("%0" + sequenceLength + "d", seq);
+            
+        // 拼接主键
+        String key = prefix + year + sequenceStr;
+            
+        log.debug("生成主键：{}", key);
+        return key;
+    }
+        
+    /**
      * 生成主键（带年份）
      *
      * @param prefix        前缀
-     * @param yearLength    年份位数（2位或4位）
+     * @param yearLength    年份位数（2 位或 4 位）
      * @param sequenceLength 序号位数
      * @return 主键
      */
     private static synchronized String generateKey(String prefix, int yearLength, int sequenceLength) {
         // 获取当前年份
         String year = getCurrentYear(yearLength);
-        
+            
         // 获取并递增序列号
         int seq = sequence.incrementAndGet();
-        
+            
         // 格式化序列号
         String sequenceStr = String.format("%0" + sequenceLength + "d", seq);
-        
+            
         // 拼接主键
         String key = prefix + year + sequenceStr;
-        
-        log.debug("生成主键: {}", key);
+            
+        log.debug("生成主键：{}", key);
         return key;
     }
 

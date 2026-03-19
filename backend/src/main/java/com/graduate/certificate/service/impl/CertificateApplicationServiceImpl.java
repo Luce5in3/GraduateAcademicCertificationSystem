@@ -22,7 +22,7 @@ import com.graduate.certificate.mapper.CertificateTemplateMapper;
 import com.graduate.certificate.mapper.StudentInfoMapper;
 import com.graduate.certificate.mapper.TeacherInfoMapper;
 import com.graduate.certificate.service.CertificateApplicationService;
-import com.graduate.certificate.util.PrimaryKeyGenerator;
+import com.graduate.certificate.util.KeyGeneratorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -48,6 +48,7 @@ public class CertificateApplicationServiceImpl implements CertificateApplication
     private final StudentInfoMapper studentInfoMapper;
     private final TeacherInfoMapper teacherInfoMapper;
     private final ApprovalRecordMapper approvalRecordMapper;
+    private final KeyGeneratorService keyGeneratorService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -93,7 +94,7 @@ public class CertificateApplicationServiceImpl implements CertificateApplication
 
         // 创建申请
         CertificateApplication application = new CertificateApplication();
-        application.setPkCa(PrimaryKeyGenerator.generateCertificateApplicationKey());
+        application.setPkCa(keyGeneratorService.generateCertificateApplicationKey());
         application.setApplicationNo(generateApplicationNo());
         application.setPkStudent(studentId);
         application.setPkUser(userId);
