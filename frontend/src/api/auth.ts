@@ -43,10 +43,16 @@ export const register = (data: RegisterRequest) => {
   })
 }
 
-// 登出
+// 登出（静默请求，不显示错误）
 export const logout = () => {
-  return request({
-    url: '/auth/logout',
-    method: 'post',
+  const token = localStorage.getItem('token')
+  return fetch('/api/auth/logout', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+    },
+  }).catch(() => {
+    // 静默处理
   })
 }

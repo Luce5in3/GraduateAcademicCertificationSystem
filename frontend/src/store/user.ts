@@ -80,17 +80,20 @@ export const useUserStore = defineStore('user', () => {
 
   // 登出
   const logout = async () => {
+    // 先清除本地状态
+    token.value = ''
+    userInfo.value = null
+    localStorage.removeItem('token')
+    localStorage.removeItem('userInfo')
+    
+    // 静默调用后端登出接口（忽略错误）
     try {
       await logoutApi()
-    } catch (error) {
-      console.error('Logout error:', error)
-    } finally {
-      token.value = ''
-      userInfo.value = null
-      localStorage.removeItem('token')
-      localStorage.removeItem('userInfo')
-      router.push('/login')
+    } catch {
+      // 忽略错误，退出登录不需要提示
     }
+    
+    router.push('/login')
   }
 
   // 获取用户类型
