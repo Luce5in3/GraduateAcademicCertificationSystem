@@ -22,6 +22,7 @@ export const useUserStore = defineStore('user', () => {
   }
   
   const userInfo = ref<any>(getUserInfoFromStorage())
+  const avatarUrl = ref<string>('')
 
   // 登录
   const login = async (loginForm: LoginRequest) => {
@@ -116,14 +117,21 @@ export const useUserStore = defineStore('user', () => {
     return userInfo.value?.userType === 3
   }
 
+  // 设置头像URL
+  const setAvatarUrl = (url: string) => {
+    avatarUrl.value = url
+  }
+
   return {
     token,
     userInfo,
+    avatarUrl,
     login,
     logout,
     getUserType,
     isStudent,
     isTeacher,
     isAdmin,
+    setAvatarUrl,
   }
 })

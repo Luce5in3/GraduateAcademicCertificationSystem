@@ -20,7 +20,7 @@
           </div>
           <div class="header-right">
             <div class="user-info">
-              <el-avatar :size="isMobile ? 32 : 36" icon="UserFilled" />
+              <el-avatar :size="isMobile ? 32 : 36" :src="userStore.avatarUrl || undefined" icon="UserFilled" />
               <div class="user-details" v-if="!isMobile">
                 <span class="username">{{ userStore.userInfo?.username }}</span>
                 <span class="user-role">{{ userRoleText }}</span>
@@ -152,6 +152,8 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
+import { getCurrentStudent } from '@/api/student'
+import { getCurrentTeacher } from '@/api/teacher'
 import { HomeFilled, DocumentAdd, List, User, Check, Setting, SwitchButton, DocumentCopy, Avatar, Files, Menu } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -201,11 +203,30 @@ const checkScreenSize = () => {
 onMounted(() => {
   checkScreenSize()
   window.addEventListener('resize', checkScreenSize)
+  loadUserAvatar()
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkScreenSize)
 })
+
+const loadUserAvatar = async () => {
+  try {
+    if (userStore.isStudent()) {
+      const res: any = await getCurrentStudent()
+      if (res.code === 200 && res.data?.imageUrl) {
+        userStore.setAvatarUrl(res.data.imageUrl)
+      }
+    } else if (userStore.isTeacher()) {
+      const res: any = await getCurrentTeacher()
+      if (res.code === 200 && res.data?.imageUrl) {
+        userStore.setAvatarUrl(res.data.imageUrl)
+      }
+    }
+  } catch (e) {
+    // 静默处理
+  }
+}
 </script>
 
 <style scoped>

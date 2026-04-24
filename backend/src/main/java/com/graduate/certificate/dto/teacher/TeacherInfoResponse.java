@@ -71,6 +71,11 @@ public class TeacherInfoResponse {
     private Integer canApprove;
 
     /**
+     * 用户头像url
+     */
+    private String imageUrl;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createTime;

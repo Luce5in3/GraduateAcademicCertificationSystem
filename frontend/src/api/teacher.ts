@@ -20,3 +20,19 @@ export const updateTeacher = (data: any) => {
     data,
   })
 }
+
+/**
+ * 上传头像
+ */
+export const uploadAvatar = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/file/avatar',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+}

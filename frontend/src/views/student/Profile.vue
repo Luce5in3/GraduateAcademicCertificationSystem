@@ -31,6 +31,29 @@
       </template>
 
       <div v-loading="pageLoading">
+        <!-- 头像区域 -->
+        <div class="avatar-section">
+          <div class="avatar-wrapper">
+            <el-avatar :size="100" :src="studentInfo.imageUrl" class="user-avatar">
+              <span style="font-size: 36px">{{ studentInfo.name ? studentInfo.name.charAt(0) : '👤' }}</span>
+            </el-avatar>
+            <el-upload
+              class="avatar-uploader"
+              :show-file-list="false"
+              :before-upload="beforeAvatarUpload"
+              :http-request="handleAvatarUpload"
+              accept=".jpg,.jpeg,.png,.gif"
+            >
+              <el-button size="small" type="primary" :loading="avatarLoading" style="margin-top: 12px">
+                {{ avatarLoading ? '上传中...' : '更换头像' }}
+              </el-button>
+            </el-upload>
+          </div>
+          <div class="avatar-tips">
+            <p>支持 JPG、PNG、GIF 格式，最大 5MB</p>
+          </div>
+        </div>
+
         <!-- 基本信息（只读） -->
         <el-divider content-position="left">基本信息（系统维护）</el-divider>
         <el-descriptions :column="2" border class="info-section">
@@ -182,7 +205,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useUserStore } from '@/store/user'
-import { getCurrentStudent, updateStudent } from '@/api/student'
+import { getCurrentStudent, updateStudent, uploadAvatar } from '@/api/student'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Edit } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -192,6 +215,7 @@ const formRef = ref<FormInstance>()
 const isEditing = ref(false)
 const loading = ref(false)
 const pageLoading = ref(false)
+const avatarLoading = ref(false)
 
 const studentInfo = ref<any>({})
 const formData = reactive({
@@ -214,6 +238,36 @@ const rules: FormRules = {
   gender: [
     { required: true, message: '请选择性别', trigger: 'change' }
   ],
+}
+
+const beforeAvatarUpload = (file: any) => {
+  const isImage = ['image/jpeg', 'image/png', 'image/gif'].includes(file.type)
+  const isLt5M = file.size / 1024 / 1024 < 5
+  if (!isImage) {
+    ElMessage.error('只能上传 JPG/PNG/GIF 格式的图片')
+    return false
+  }
+  if (!isLt5M) {
+    ElMessage.error('图片大小不能超过 5MB')
+    return false
+  }
+  return true
+}
+
+const handleAvatarUpload = async (options: any) => {
+  avatarLoading.value = true
+  try {
+    const res: any = await uploadAvatar(options.file)
+    if (res.code === 200 && res.data) {
+      studentInfo.value.imageUrl = res.data.imageUrl
+      userStore.setAvatarUrl(res.data.imageUrl)
+      ElMessage.success('头像更新成功')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '头像上传失败')
+  } finally {
+    avatarLoading.value = false
+  }
 }
 
 const getGraduationStatusType = (status: number) => {
@@ -370,5 +424,29 @@ onMounted(() => {
 :deep(.el-form-item.is-disabled .el-select .el-input__wrapper) {
   background-color: #f5f7fa;
   cursor: not-allowed;
+}
+
+.avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 0;
+}
+
+.avatar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.user-avatar {
+  border: 3px solid #e4e7ed;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-tips p {
+  margin: 0;
+  color: #909399;
+  font-size: 13px;
 }
 </style>
