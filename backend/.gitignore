@@ -36,6 +36,10 @@ build/
 *.log
 logs/
 
+### Env ###
+.env
+cdf
+
 ### OS ###
 .DS_Store
 Thumbs.db
