@@ -64,9 +64,11 @@ public class OssConfig {
             log.info("使用环境变量初始化OSSClient");
             provider = new EnvironmentVariableCredentialsProvider();
         }
+        log.info("OSS初始化: region={}, endpoint={}, bucket={}", region, endpoint, bucket);
         return OSSClient.newBuilder()
                 .credentialsProvider(provider)
                 .region(region)
+                .endpoint("https://" + endpoint)
                 .build();
     }
 }

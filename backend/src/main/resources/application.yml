@@ -44,11 +44,11 @@ jwt:
 
 # 阿里云 OSS 配置
 oss:
-  region: ${OSS_REGION:oss-cn-beijing}
+  region: ${OSS_REGION:cn-beijing}
   bucket: ${OSS_BUCKET:luce5in3-buket}
   endpoint: ${OSS_ENDPOINT:oss-cn-beijing.aliyuncs.com}
-  base-url: ${OSS_BASE_URL:luce5in3-buket.oss-cn-beijing.aliyuncs.com}
-  prefix: ${OSS_PREFIX:graduated/}
+  base-url: ${OSS_BASE_URL:https://luce5in3-buket.oss-cn-beijing.aliyuncs.com}
+  prefix: ${OSS_PREFIX:graduated}
   access-key-id: ${OSS_ACCESS_KEY_ID:}
   access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
 

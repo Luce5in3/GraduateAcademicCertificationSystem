@@ -170,6 +170,21 @@ public class TeacherInfoServiceImpl implements TeacherInfoService {
     private TeacherInfoResponse convertToResponse(TeacherInfo teacherInfo) {
         TeacherInfoResponse response = new TeacherInfoResponse();
         BeanUtils.copyProperties(teacherInfo, response);
+        // 规范化imageUrl，确保包含协议前缀
+        response.setImageUrl(normalizeUrl(response.getImageUrl()));
         return response;
+    }
+
+    /**
+     * 规范化URL，确保包含https://协议前缀
+     */
+    private String normalizeUrl(String url) {
+        if (!StringUtils.hasText(url)) {
+            return url;
+        }
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            return "https://" + url;
+        }
+        return url;
     }
 }
