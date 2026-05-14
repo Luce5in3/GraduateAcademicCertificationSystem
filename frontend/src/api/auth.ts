@@ -56,3 +56,19 @@ export const logout = () => {
     // 静默处理
   })
 }
+
+// 修改密码请求参数
+export interface ChangePasswordRequest {
+  oldPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+// 修改密码
+export const changePassword = (data: ChangePasswordRequest) => {
+  return request({
+    url: '/auth/password',
+    method: 'put',
+    data,
+  })
+}

@@ -199,6 +199,55 @@
         </el-descriptions>
       </div>
     </el-card>
+
+    <!-- 修改密码卡片 -->
+    <el-card class="profile-card" style="margin-top: 20px">
+      <template #header>
+        <div class="card-header">
+          <div class="header-left">
+            <h2>🔒 修改密码</h2>
+            <p>定期修改密码可以提高账户安全性</p>
+          </div>
+        </div>
+      </template>
+      <el-form
+        ref="passwordFormRef"
+        :model="passwordForm"
+        :rules="passwordRules"
+        label-width="120px"
+        style="max-width: 500px"
+      >
+        <el-form-item label="旧密码" prop="oldPassword">
+          <el-input
+            v-model="passwordForm.oldPassword"
+            type="password"
+            placeholder="请输入当前密码"
+            show-password
+          />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input
+            v-model="passwordForm.newPassword"
+            type="password"
+            placeholder="请输入新密码（6-20位）"
+            show-password
+          />
+        </el-form-item>
+        <el-form-item label="确认新密码" prop="confirmPassword">
+          <el-input
+            v-model="passwordForm.confirmPassword"
+            type="password"
+            placeholder="请再次输入新密码"
+            show-password
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="passwordLoading" @click="handleChangePassword">
+            确认修改
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
@@ -206,6 +255,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useUserStore } from '@/store/user'
 import { getCurrentStudent, updateStudent, uploadAvatar } from '@/api/student'
+import { changePassword } from '@/api/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Edit } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -216,6 +266,7 @@ const isEditing = ref(false)
 const loading = ref(false)
 const pageLoading = ref(false)
 const avatarLoading = ref(false)
+const passwordLoading = ref(false)
 
 const studentInfo = ref<any>({})
 const formData = reactive({
@@ -238,6 +289,60 @@ const rules: FormRules = {
   gender: [
     { required: true, message: '请选择性别', trigger: 'change' }
   ],
+}
+
+// 修改密码表单
+const passwordFormRef = ref<FormInstance>()
+const passwordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
+
+const passwordRules: FormRules = {
+  oldPassword: [
+    { required: true, message: '请输入旧密码', trigger: 'blur' }
+  ],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度在6-20位之间', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    {
+      validator: (_rule: any, value: string, callback: any) => {
+        if (value !== passwordForm.newPassword) {
+          callback(new Error('两次密码输入不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+}
+
+const handleChangePassword = async () => {
+  if (!passwordFormRef.value) return
+  await passwordFormRef.value.validate(async (valid) => {
+    if (valid) {
+      passwordLoading.value = true
+      try {
+        const res: any = await changePassword(passwordForm)
+        if (res.code === 200) {
+          ElMessage.success('密码修改成功，请重新登录')
+          passwordForm.oldPassword = ''
+          passwordForm.newPassword = ''
+          passwordForm.confirmPassword = ''
+          passwordFormRef.value?.resetFields()
+        }
+      } catch (error: any) {
+        ElMessage.error(error.message || '密码修改失败')
+      } finally {
+        passwordLoading.value = false
+      }
+    }
+  })
 }
 
 const beforeAvatarUpload = (file: any) => {

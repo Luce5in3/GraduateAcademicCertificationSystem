@@ -116,3 +116,17 @@ export const getAvailableTemplates = () => {
     method: 'get',
   })
 }
+
+// 下载证书PDF
+export const downloadCertificate = (pkCa: string) => {
+  return request({
+    url: `/certificate/download/${pkCa}`,
+    method: 'get',
+    responseType: 'blob',
+  })
+}
+
+// 获取证书预览URL
+export const getCertificatePreviewUrl = (pkCa: string) => {
+  return `/api/certificate/preview/${pkCa}`
+}

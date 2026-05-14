@@ -193,6 +193,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Download, View } from '@element-plus/icons-vue'
 import request from '@/api/request'
+import { downloadCertificate, getCertificatePreviewUrl } from '@/api/application'
 
 const router = useRouter()
 const route = useRoute()
@@ -298,16 +299,30 @@ const goBack = () => {
 }
 
 const handlePreview = () => {
-  // 在新窗口打开证明预览页面
+  // 在新窗口打开后端PDF预览
   const pkCa = route.params.pkCa as string
-  const previewUrl = `/certificate-preview/${pkCa}`
-  window.open(previewUrl, '_blank')
+  const token = localStorage.getItem('token')
+  const previewUrl = getCertificatePreviewUrl(pkCa)
+  // 附加token用于鉴权
+  window.open(`${previewUrl}${previewUrl.includes('?') ? '&' : '?'}token=${token}`, '_blank')
 }
 
-const handleExport = () => {
-  // 直接打开预览页面，用户在那里点击打印/导出PDF
-  handlePreview()
-  ElMessage.success('请在新打开的窗口中点击“打印/导出PDF”按钮')
+const handleExport = async () => {
+  const pkCa = route.params.pkCa as string
+  try {
+    const res: any = await downloadCertificate(pkCa)
+    // 处理blob下载
+    const blob = new Blob([res], { type: 'application/pdf' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `学术证明_${pkCa}.pdf`
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('证书下载成功')
+  } catch (error: any) {
+    ElMessage.error(error.message || '下载失败，请稍后重试')
+  }
 }
 
 onMounted(() => {

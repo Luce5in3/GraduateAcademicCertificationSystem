@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.graduate.certificate.common.constant.UserTypeConstant;
 import com.graduate.certificate.common.exception.BusinessException;
 import com.graduate.certificate.common.result.ResultCode;
+import com.graduate.certificate.dto.auth.ChangePasswordRequest;
 import com.graduate.certificate.dto.auth.LoginRequest;
 import com.graduate.certificate.dto.auth.LoginResponse;
 import com.graduate.certificate.dto.auth.RegisterRequest;
@@ -124,6 +125,38 @@ public class AuthServiceImpl implements AuthService {
         }
 
         log.info("用户注册成功：username={}, userType={}", request.getUsername(), request.getUserType());
+    }
+
+    @Override
+    public void changePassword(ChangePasswordRequest request) {
+        // 1. 验证新密码一致性
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BusinessException("两次新密码输入不一致");
+        }
+
+        // 2. 获取当前用户
+        String userId = com.graduate.certificate.common.context.UserContextHolder.getUserId();
+        SysUser user = sysUserMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ResultCode.USER_NOT_FOUND);
+        }
+
+        // 3. 验证旧密码
+        if (!PasswordUtil.matches(request.getOldPassword(), user.getPassword())) {
+            throw new BusinessException("旧密码不正确");
+        }
+
+        // 4. 新密码不能与旧密码相同
+        if (PasswordUtil.matches(request.getNewPassword(), user.getPassword())) {
+            throw new BusinessException("新密码不能与旧密码相同");
+        }
+
+        // 5. 更新密码
+        user.setPassword(PasswordUtil.encode(request.getNewPassword()));
+        user.setUpdateTime(LocalDateTime.now());
+        sysUserMapper.updateById(user);
+
+        log.info("用户修改密码成功: userId={}", userId);
     }
 
     /**

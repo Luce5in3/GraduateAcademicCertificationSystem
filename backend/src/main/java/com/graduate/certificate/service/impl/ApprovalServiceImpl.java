@@ -4,6 +4,8 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.graduate.certificate.common.constant.ApplicationStatusConstant;
 import com.graduate.certificate.common.constant.ApprovalResultConstant;
 import com.graduate.certificate.common.constant.UserTypeConstant;
@@ -11,6 +13,7 @@ import com.graduate.certificate.common.context.UserContextHolder;
 import com.graduate.certificate.common.exception.BusinessException;
 import com.graduate.certificate.common.result.ResultCode;
 import com.graduate.certificate.dto.approval.ApprovalRequest;
+import com.graduate.certificate.dto.approval.BatchApprovalRequest;
 import com.graduate.certificate.entity.ApprovalRecord;
 import com.graduate.certificate.entity.CertificateApplication;
 import com.graduate.certificate.entity.CertificateTemplate;
@@ -94,6 +97,43 @@ public class ApprovalServiceImpl implements ApprovalService {
         }
 
         log.info("审批处理成功: pkCa={}, result={}, teacherId={}", request.getPkCa(), request.getApprovalResult(), teacherId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchApproval(BatchApprovalRequest request) {
+        int successCount = 0;
+        for (String pkCa : request.getPkCaList()) {
+            try {
+                ApprovalRequest singleRequest = new ApprovalRequest();
+                singleRequest.setPkCa(pkCa);
+                singleRequest.setApprovalResult(request.getApprovalResult());
+                singleRequest.setApprovalOpinion(request.getApprovalOpinion());
+                processApproval(singleRequest);
+                successCount++;
+            } catch (BusinessException e) {
+                log.warn("批量审批跳过: pkCa={}, reason={}", pkCa, e.getMessage());
+            }
+        }
+        log.info("批量审批完成: 总数={}, 成功={}", request.getPkCaList().size(), successCount);
+    }
+
+    @Override
+    public IPage<ApprovalRecord> getApprovalHistory(int current, int size) {
+        String userId = UserContextHolder.getUserId();
+        LambdaQueryWrapper<ApprovalRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ApprovalRecord::getPkUser, userId)
+               .orderByDesc(ApprovalRecord::getApprovalTime);
+        return approvalRecordMapper.selectPage(new Page<>(current, size), wrapper);
+    }
+
+    @Override
+    public List<ApprovalRecord> getRecordsByApplication(String pkCa) {
+        LambdaQueryWrapper<ApprovalRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ApprovalRecord::getPkCa, pkCa)
+               .orderByAsc(ApprovalRecord::getApprovalLevel)
+               .orderByAsc(ApprovalRecord::getApprovalTime);
+        return approvalRecordMapper.selectList(wrapper);
     }
 
     /**

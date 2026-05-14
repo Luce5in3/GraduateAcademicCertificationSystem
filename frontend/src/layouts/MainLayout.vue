@@ -101,6 +101,12 @@
                   <span>申请列表</span>
                 </template>
               </el-menu-item>
+              <el-menu-item index="/teacher/approval-history">
+                <el-icon><Files /></el-icon>
+                <template #title>
+                  <span>审批历史</span>
+                </template>
+              </el-menu-item>
               <el-menu-item index="/teacher/profile">
                 <el-icon><User /></el-icon>
                 <template #title>

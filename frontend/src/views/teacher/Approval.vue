@@ -11,10 +11,16 @@
             <el-tag type="warning" size="large">待审批</el-tag>
           </el-badge>
         </div>
+        <!-- 批量操作栏 -->
+        <div v-if="selectedRows.length > 0" class="batch-actions">
+          <span style="margin-right: 12px; color: #606266">已选 {{ selectedRows.length }} 项</span>
+          <el-button type="success" size="small" @click="handleBatchApprove">批量通过</el-button>
+          <el-button type="danger" size="small" @click="handleBatchReject">批量拒绝</el-button>
+        </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" border stripe>
-        <el-table-column type="index" label="序号" width="60" align="center" />
+      <el-table :data="tableData" v-loading="loading" border stripe @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" align="center" />
         <el-table-column prop="studentName" label="学生姓名" width="120" align="center" />
         <el-table-column prop="studentNo" label="学号" width="150" align="center" />
         <el-table-column prop="certificateType" label="证书类型" width="150" align="center" />
@@ -151,7 +157,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getPendingApprovals, submitApproval } from '@/api/approval'
+import { getPendingApprovals, submitApproval, batchApproval } from '@/api/approval'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { View, Select, CloseBold } from '@element-plus/icons-vue'
 
@@ -164,6 +170,7 @@ const total = ref(0)
 const dialogVisible = ref(false)
 const detailVisible = ref(false)
 const currentApplication = ref<any>(null)
+const selectedRows = ref<any[]>([])
 
 const approvalForm = reactive({
   applicationId: '',
@@ -209,6 +216,58 @@ const handleReject = (row: any) => {
 const handleViewDetail = (row: any) => {
   currentApplication.value = row
   detailVisible.value = true
+}
+
+const handleSelectionChange = (rows: any[]) => {
+  selectedRows.value = rows
+}
+
+const handleBatchApprove = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `确认批量通过已选的 ${selectedRows.value.length} 条申请吗？`,
+      '批量审批',
+      { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' }
+    )
+    submitting.value = true
+    const res: any = await batchApproval({
+      pkCaList: selectedRows.value.map((r: any) => r.pkCa),
+      approvalResult: 1,
+      approvalOpinion: '批量通过'
+    })
+    if (res.code === 200) {
+      ElMessage.success('批量审批完成')
+      fetchData()
+    }
+  } catch (error) {
+    // 用户取消
+  } finally {
+    submitting.value = false
+  }
+}
+
+const handleBatchReject = async () => {
+  try {
+    const { value: reason } = await ElMessageBox.prompt(
+      '请输入批量拒绝理由',
+      '批量拒绝',
+      { confirmButtonText: '确认', cancelButtonText: '取消', inputPattern: /.+/, inputErrorMessage: '请输入拒绝理由' }
+    )
+    submitting.value = true
+    const res: any = await batchApproval({
+      pkCaList: selectedRows.value.map((r: any) => r.pkCa),
+      approvalResult: 2,
+      approvalOpinion: reason
+    })
+    if (res.code === 200) {
+      ElMessage.success('批量拒绝完成')
+      fetchData()
+    }
+  } catch (error) {
+    // 用户取消
+  } finally {
+    submitting.value = false
+  }
 }
 
 const submitApprovalConfirm = async () => {

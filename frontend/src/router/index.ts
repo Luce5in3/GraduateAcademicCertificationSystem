@@ -65,6 +65,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '申请列表', requiresAuth: true, roles: [2] },
       },
       {
+        path: 'teacher/approval-history',
+        name: 'ApprovalHistory',
+        component: () => import('@/views/teacher/ApprovalHistory.vue'),
+        meta: { title: '审批历史', requiresAuth: true, roles: [2] },
+      },
+      {
         path: 'teacher/profile',
         name: 'TeacherProfile',
         component: () => import('@/views/teacher/Profile.vue'),

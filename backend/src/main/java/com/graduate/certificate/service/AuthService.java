@@ -1,5 +1,6 @@
 package com.graduate.certificate.service;
 
+import com.graduate.certificate.dto.auth.ChangePasswordRequest;
 import com.graduate.certificate.dto.auth.LoginRequest;
 import com.graduate.certificate.dto.auth.LoginResponse;
 import com.graduate.certificate.dto.auth.RegisterRequest;
@@ -23,4 +24,11 @@ public interface AuthService {
      * @param request 注册请求
      */
     void register(RegisterRequest request);
+
+    /**
+     * 修改密码
+     *
+     * @param request 修改密码请求
+     */
+    void changePassword(ChangePasswordRequest request);
 }
