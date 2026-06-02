@@ -56,6 +56,41 @@ public class PrimaryKeyGenerator {
     public static final String OPERATION_LOG_PREFIX = "OPL";
 
     /**
+     * 消息通知主键前缀
+     */
+    public static final String NOTIFICATION_PREFIX = "NTF";
+
+    /**
+     * 系统公告主键前缀
+     */
+    public static final String ANNOUNCEMENT_PREFIX = "ANC";
+
+    /**
+     * 公告阅读记录主键前缀
+     */
+    public static final String ANNOUNCEMENT_READ_PREFIX = "ANR";
+
+    /**
+     * 证书验证记录主键前缀
+     */
+    public static final String CERTIFICATE_VERIFICATION_PREFIX = "CVF";
+
+    /**
+     * 申请反馈主键前缀
+     */
+    public static final String APPLICATION_FEEDBACK_PREFIX = "FBK";
+
+    /**
+     * 学院信息主键前缀
+     */
+    public static final String COLLEGE_PREFIX = "C";
+
+    /**
+     * 部门信息主键前缀
+     */
+    public static final String DEPARTMENT_PREFIX = "D";
+
+    /**
      * 序列号计数器（内存计数，用于高并发时减少数据库查询）
      */
     private static final AtomicInteger sequence = new AtomicInteger(0);
@@ -138,6 +173,62 @@ public class PrimaryKeyGenerator {
      */
     public static String generateOperationLogKey() {
         return generateKey(OPERATION_LOG_PREFIX, 4, 9);
+    }
+
+    /**
+     * 生成消息通知主键
+     * 格式：NTF + 年份(4位) + 序号(8位)，如：NTF202500000001
+     */
+    public static String generateNotificationKey() {
+        return generateKey(NOTIFICATION_PREFIX, 4, 8);
+    }
+
+    /**
+     * 生成系统公告主键
+     * 格式：ANC + 年份(4位) + 序号(5位)，如：ANC202500001
+     */
+    public static String generateAnnouncementKey() {
+        return generateKey(ANNOUNCEMENT_PREFIX, 4, 5);
+    }
+
+    /**
+     * 生成公告阅读记录主键
+     * 格式：ANR + 年份(4位) + 序号(8位)，如：ANR202500000001
+     */
+    public static String generateAnnouncementReadKey() {
+        return generateKey(ANNOUNCEMENT_READ_PREFIX, 4, 8);
+    }
+
+    /**
+     * 生成证书验证记录主键
+     * 格式：CVF + 年份(4位) + 序号(8位)，如：CVF202500000001
+     */
+    public static String generateCertificateVerificationKey() {
+        return generateKey(CERTIFICATE_VERIFICATION_PREFIX, 4, 8);
+    }
+
+    /**
+     * 生成申请反馈主键
+     * 格式：FBK + 年份(4位) + 序号(5位)，如：FBK202500001
+     */
+    public static String generateApplicationFeedbackKey() {
+        return generateKey(APPLICATION_FEEDBACK_PREFIX, 4, 5);
+    }
+
+    /**
+     * 生成学院主键
+     * 格式：C + 年份(4位) + 序号(4位)，如：C20250001
+     */
+    public static String generateCollegeKey() {
+        return generateKey(COLLEGE_PREFIX, 4, 4);
+    }
+
+    /**
+     * 生成部门主键
+     * 格式：D + 年份(4位) + 序号(4位)，如：D20250001
+     */
+    public static String generateDepartmentKey() {
+        return generateKey(DEPARTMENT_PREFIX, 4, 4);
     }
 
     /**

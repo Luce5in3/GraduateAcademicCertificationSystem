@@ -179,7 +179,7 @@
             </div>
           </template>
           <div class="profile-card">
-            <el-avatar :size="80" icon="UserFilled" class="profile-avatar" />
+            <el-avatar :size="80" :src="userStore.avatarUrl || undefined" icon="UserFilled" class="profile-avatar" />
             <div class="profile-info">
               <h3>{{ userStore.userInfo?.realName || userStore.userInfo?.username }}</h3>
               <div class="info-item">
@@ -287,21 +287,25 @@
       </el-col>
     </el-row>
 
-    <!-- 最近活动 -->
+    <!-- 最新公告 -->
     <el-card class="recent-activities" :class="{ 'card-enter': true }">
       <template #header>
         <div class="card-header">
-          <span>最近活动</span>
+          <span>📢 最新公告</span>
+          <el-button type="primary" link @click="router.push('/notifications')">查看更多</el-button>
         </div>
       </template>
-      <div class="activity-list">
-        <div class="activity-item" v-for="(activity, index) in recentActivities" :key="index">
-          <div class="activity-icon" :class="activity.type">
-            <el-icon :size="20"><component :is="activity.icon" /></el-icon>
-          </div>
-          <div class="activity-content">
-            <div class="activity-title">{{ activity.title }}</div>
-            <div class="activity-time">{{ activity.time }}</div>
+      <div v-loading="announcementLoading">
+        <el-empty v-if="announcements.length === 0 && !announcementLoading" description="暂无公告" :image-size="60" />
+        <div class="activity-list" v-else>
+          <div class="activity-item" v-for="item in announcements" :key="item.pkAnnouncement" @click="router.push('/notifications')">
+            <div class="activity-icon" :class="item.priority === 2 ? 'danger' : item.priority === 1 ? 'warning' : 'info'">
+              <el-icon :size="20"><Notification /></el-icon>
+            </div>
+            <div class="activity-content">
+              <div class="activity-title">{{ item.title }}</div>
+              <div class="activity-time">{{ item.publishTime ? new Date(item.publishTime).toLocaleString('zh-CN') : '' }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -315,6 +319,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { getStudentStatistics, getTeacherStatistics, type StatisticsResponse } from '@/api/application'
 import { getAdminStatistics } from '@/api/admin'
+import { getAnnouncements } from '@/api/notification'
 import { ElMessage } from 'element-plus'
 import { 
   DocumentAdd, 
@@ -333,7 +338,8 @@ import {
   Files,
   Operation,
   Key,
-  ArrowUp
+  ArrowUp,
+  Notification
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -345,27 +351,9 @@ const CheckIcon = Check
 const statistics = ref<StatisticsResponse>({})
 const loading = ref(false)
 
-// 最近活动
-const recentActivities = ref([
-  {
-    title: '系统已更新至最新版本',
-    time: '今天 09:30',
-    type: 'info',
-    icon: DataAnalysis
-  },
-  {
-    title: '您的账户安全状态良好',
-    time: '昨天 16:45',
-    type: 'success',
-    icon: CircleCheck
-  },
-  {
-    title: '新的证明模板已添加',
-    time: '2天前',
-    type: 'primary',
-    icon: DocumentAdd
-  }
-])
+// 最新公告
+const announcements = ref<any[]>([])
+const announcementLoading = ref(false)
 
 const userTypeText = computed(() => {
   const type = userStore.getUserType()
@@ -417,9 +405,21 @@ const loadStatistics = async () => {
   }
 }
 
+// 加载最新公告
+const loadAnnouncements = async () => {
+  announcementLoading.value = true
+  try {
+    const res: any = await getAnnouncements({ current: 1, size: 5 })
+    if (res.code === 200 && res.data) {
+      announcements.value = res.data.records || []
+    }
+  } catch { /* */ } finally { announcementLoading.value = false }
+}
+
 // 组件加载时获取统计数据
 onMounted(() => {
   loadStatistics()
+  loadAnnouncements()
   
   // 添加动画效果
   setTimeout(() => {
@@ -784,6 +784,16 @@ onMounted(() => {
 .activity-icon.info {
   background-color: rgba(144, 147, 153, 0.1);
   color: var(--info-color);
+}
+
+.activity-icon.warning {
+  background-color: rgba(230, 162, 60, 0.15);
+  color: var(--warning-color);
+}
+
+.activity-icon.danger {
+  background-color: rgba(245, 108, 108, 0.15);
+  color: var(--danger-color);
 }
 
 .activity-content {

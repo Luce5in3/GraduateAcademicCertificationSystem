@@ -19,6 +19,14 @@
             </div>
           </div>
           <div class="header-right">
+            <!-- 通知铃铛 -->
+            <el-tooltip content="消息中心" placement="bottom">
+              <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99" class="notification-bell">
+                <el-button text class="header-icon-btn" @click="router.push('/notifications')">
+                  <el-icon :size="22"><Bell /></el-icon>
+                </el-button>
+              </el-badge>
+            </el-tooltip>
             <div class="user-info">
               <el-avatar :size="isMobile ? 32 : 36" :src="userStore.avatarUrl || undefined" icon="UserFilled" />
               <div class="user-details" v-if="!isMobile">
@@ -77,6 +85,12 @@
                 <el-icon><List /></el-icon>
                 <template #title>
                   <span>我的申请</span>
+                </template>
+              </el-menu-item>
+              <el-menu-item index="/student/feedback">
+                <el-icon><ChatLineSquare /></el-icon>
+                <template #title>
+                  <span>申请反馈</span>
                 </template>
               </el-menu-item>
               <el-menu-item index="/student/profile">
@@ -141,7 +155,31 @@
                   <span>全站申请记录</span>
                 </template>
               </el-menu-item>
+              <el-menu-item index="/admin/announcements">
+                <el-icon><Notification /></el-icon>
+                <template #title>
+                  <span>公告管理</span>
+                </template>
+              </el-menu-item>
+              <el-menu-item index="/admin/colleges">
+                <el-icon><OfficeBuilding /></el-icon>
+                <template #title>
+                  <span>学院管理</span>
+                </template>
+              </el-menu-item>
+              <el-menu-item index="/admin/departments">
+                <el-icon><Grid /></el-icon>
+                <template #title>
+                  <span>部门管理</span>
+                </template>
+              </el-menu-item>
             </template>
+
+            <!-- 公用菜单 -->
+            <el-menu-item index="/notifications">
+              <el-icon><Bell /></el-icon>
+              <template #title><span>消息中心</span></template>
+            </el-menu-item>
           </el-menu>
         </el-aside>
 
@@ -155,12 +193,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { getCurrentStudent } from '@/api/student'
 import { getCurrentTeacher } from '@/api/teacher'
-import { HomeFilled, DocumentAdd, List, User, Check, Setting, SwitchButton, DocumentCopy, Avatar, Files, Menu } from '@element-plus/icons-vue'
+import { getUnreadNotificationCount, markAllNotificationsRead } from '@/api/notification'
+import { HomeFilled, DocumentAdd, List, User, Check, Setting, SwitchButton, DocumentCopy, Avatar, Files, Menu, Bell, Notification, ChatLineSquare, OfficeBuilding, Grid } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -168,6 +207,8 @@ const userStore = useUserStore()
 
 const isSidebarCollapsed = ref(false)
 const isMobile = ref(false)
+const unreadCount = ref(0)
+let pollTimer: any = null
 
 const activeMenu = computed(() => route.path)
 
@@ -206,14 +247,32 @@ const checkScreenSize = () => {
   }
 }
 
+const pollUnreadCounts = async () => {
+  try {
+    const res = await getUnreadNotificationCount()
+    if (res.code === 200) unreadCount.value = res.data || 0
+  } catch { /* 静默 */ }
+}
+
+// 监听路由：进入消息中心时自动清除角标
+watch(() => route.path, (path) => {
+  if (path === '/notifications') {
+    unreadCount.value = 0
+    markAllNotificationsRead().catch(() => {})
+  }
+})
+
 onMounted(() => {
   checkScreenSize()
   window.addEventListener('resize', checkScreenSize)
   loadUserAvatar()
+  pollUnreadCounts()
+  pollTimer = setInterval(pollUnreadCounts, 30000) // 每30s轮询
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkScreenSize)
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
 })
 
 const loadUserAvatar = async () => {
@@ -325,6 +384,22 @@ const loadUserAvatar = async () => {
 .user-role {
   font-size: 12px;
   opacity: 0.85;
+}
+
+.header-icon-btn {
+  color: rgba(255, 255, 255, 0.9);
+  padding: 6px;
+  transition: all var(--transition-normal);
+}
+
+.header-icon-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 50%;
+}
+
+.notification-bell {
+  line-height: 1;
 }
 
 .sidebar {

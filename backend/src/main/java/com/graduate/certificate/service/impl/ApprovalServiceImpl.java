@@ -25,6 +25,7 @@ import com.graduate.certificate.mapper.CertificateTemplateMapper;
 import com.graduate.certificate.mapper.StudentInfoMapper;
 import com.graduate.certificate.mapper.TeacherInfoMapper;
 import com.graduate.certificate.service.ApprovalService;
+import com.graduate.certificate.service.NotificationService;
 import com.graduate.certificate.util.PrimaryKeyGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +56,7 @@ public class ApprovalServiceImpl implements ApprovalService {
     private final TeacherInfoMapper teacherInfoMapper;
     private final StudentInfoMapper studentInfoMapper;
     private final CertificateTemplateMapper templateMapper;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -224,20 +226,29 @@ public class ApprovalServiceImpl implements ApprovalService {
 
     /**
      * 处理审批通过
-     * 逻辑：
-     * 1. 变更为单级直接审批逻辑
-     * 2. 一旦当前级别教师审批通过，申请即标记为最终已通过
      */
     private void handleApproved(CertificateApplication application, TeacherInfo currentTeacher) {
         log.info("审批通过处理: pkCa={}, 当前级别={}, 审批教师={}",
             application.getPkCa(), application.getCurrentApprovalLevel(), currentTeacher.getName());
 
-        // 单级直接审批：审批即通过
         application.setStatus(ApplicationStatusConstant.APPROVED);
         application.setCompleteTime(LocalDateTime.now());
         application.setPkTeacher(null);
-        
         applicationMapper.updateById(application);
+
+        // 发送审批通过通知给学生
+        try {
+            notificationService.sendNotification(
+                application.getPkUser(),
+                "证明申请已通过",
+                String.format("您的%s申请（编号：%s）已通过审批，可前往下载证书。", 
+                    application.getCertificateType(), application.getApplicationNo()),
+                1,
+                application.getPkCa()
+            );
+        } catch (Exception e) {
+            log.error("发送审批通过通知失败", e);
+        }
     }
 
     /**
@@ -249,6 +260,21 @@ public class ApprovalServiceImpl implements ApprovalService {
         application.setCompleteTime(LocalDateTime.now());
         application.setPkTeacher(null);
         applicationMapper.updateById(application);
+
+        // 发送审批拒绝通知给学生
+        try {
+            notificationService.sendNotification(
+                application.getPkUser(),
+                "证明申请已被拒绝",
+                String.format("您的%s申请（编号：%s）已被拒绝，原因：%s", 
+                    application.getCertificateType(), application.getApplicationNo(), 
+                    reason != null ? reason : "未说明"),
+                1,
+                application.getPkCa()
+            );
+        } catch (Exception e) {
+            log.error("发送审批拒绝通知失败", e);
+        }
     }
 
     /**
@@ -259,7 +285,6 @@ public class ApprovalServiceImpl implements ApprovalService {
         log.info("审批退回处理: pkCa={}, 当前级别={}", application.getPkCa(), application.getCurrentApprovalLevel());
         
         application.setStatus(ApplicationStatusConstant.PENDING);
-        // 如果是1级审批，保留/恢复导师指定；2级及以上保持pkTeacher为空
         if (application.getCurrentApprovalLevel() == 1) {
             StudentInfo student = studentInfoMapper.selectById(application.getPkStudent());
             if (student != null) {
@@ -269,6 +294,20 @@ public class ApprovalServiceImpl implements ApprovalService {
             application.setPkTeacher(null);
         }
         applicationMapper.updateById(application);
+
+        // 发送退回通知给学生
+        try {
+            notificationService.sendNotification(
+                application.getPkUser(),
+                "证明申请已被退回",
+                String.format("您的%s申请（编号：%s）已被退回，请修改后重新提交。", 
+                    application.getCertificateType(), application.getApplicationNo()),
+                1,
+                application.getPkCa()
+            );
+        } catch (Exception e) {
+            log.error("发送退回通知失败", e);
+        }
     }
 
     /**

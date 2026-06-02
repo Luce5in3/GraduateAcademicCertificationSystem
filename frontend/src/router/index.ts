@@ -76,6 +76,20 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/teacher/Profile.vue'),
         meta: { title: '个人信息', requiresAuth: true, roles: [2] },
       },
+      // 消息中心（所有角色）
+      {
+        path: 'notifications',
+        name: 'Notifications',
+        component: () => import('@/views/NotificationCenter.vue'),
+        meta: { title: '消息中心', requiresAuth: true },
+      },
+      // 学生 - 反馈
+      {
+        path: 'student/feedback',
+        name: 'StudentFeedback',
+        component: () => import('@/views/student/Feedback.vue'),
+        meta: { title: '申请反馈', requiresAuth: true, roles: [1] },
+      },
       // 管理员端路由
       {
         path: 'admin/templates',
@@ -101,7 +115,32 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/admin/AllApplications.vue'),
         meta: { title: '全站申请记录', requiresAuth: true, roles: [3] },
       },
+      {
+        path: 'admin/announcements',
+        name: 'AdminAnnouncements',
+        component: () => import('@/views/admin/AnnouncementManage.vue'),
+        meta: { title: '公告管理', requiresAuth: true, roles: [3] },
+      },
+      {
+        path: 'admin/colleges',
+        name: 'AdminColleges',
+        component: () => import('@/views/admin/CollegeManage.vue'),
+        meta: { title: '学院管理', requiresAuth: true, roles: [3] },
+      },
+      {
+        path: 'admin/departments',
+        name: 'AdminDepartments',
+        component: () => import('@/views/admin/DepartmentManage.vue'),
+        meta: { title: '部门管理', requiresAuth: true, roles: [3] },
+      },
     ],
+  },
+  // 证书真伪验证（公开访问，无需登录）
+  {
+    path: '/verify',
+    name: 'CertificateVerify',
+    component: () => import('@/views/CertificateVerify.vue'),
+    meta: { title: '证书真伪验证', requiresAuth: false },
   },
   {
     path: '/:pathMatch(.*)*',

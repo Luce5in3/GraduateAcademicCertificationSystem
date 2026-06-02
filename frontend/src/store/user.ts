@@ -22,7 +22,7 @@ export const useUserStore = defineStore('user', () => {
   }
   
   const userInfo = ref<any>(getUserInfoFromStorage())
-  const avatarUrl = ref<string>('')
+  const avatarUrl = ref<string>(localStorage.getItem('avatarUrl') || '')
 
   // 登录
   const login = async (loginForm: LoginRequest) => {
@@ -81,11 +81,13 @@ export const useUserStore = defineStore('user', () => {
 
   // 登出
   const logout = async () => {
-    // 先清除本地状态
+    // 清除本地状态
     token.value = ''
     userInfo.value = null
+    avatarUrl.value = ''
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
+    localStorage.removeItem('avatarUrl')
     
     // 静默调用后端登出接口（忽略错误）
     try {
@@ -120,6 +122,7 @@ export const useUserStore = defineStore('user', () => {
   // 设置头像URL
   const setAvatarUrl = (url: string) => {
     avatarUrl.value = url
+    localStorage.setItem('avatarUrl', url)
   }
 
   return {
