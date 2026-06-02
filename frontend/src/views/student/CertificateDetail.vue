@@ -193,7 +193,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Download, View } from '@element-plus/icons-vue'
 import request from '@/api/request'
-import { downloadCertificate, getCertificatePreviewUrl } from '@/api/application'
+import { downloadCertificate, previewCertificate } from '@/api/application'
 
 const router = useRouter()
 const route = useRoute()
@@ -298,21 +298,35 @@ const goBack = () => {
   router.back()
 }
 
-const handlePreview = () => {
-  // 在新窗口打开后端PDF预览
+const handlePreview = async () => {
   const pkCa = route.params.pkCa as string
-  const token = localStorage.getItem('token')
-  const previewUrl = getCertificatePreviewUrl(pkCa)
-  // 附加token用于鉴权
-  window.open(`${previewUrl}${previewUrl.includes('?') ? '&' : '?'}token=${token}`, '_blank')
+  try {
+    const blob: any = await previewCertificate(pkCa)
+    // 后端返回的 JSON 错误也会被当作 blob，需要判断
+    if (blob.type === 'application/json' || blob.type === 'application/json;charset=UTF-8') {
+      const text = await new Response(blob).text()
+      const errData = JSON.parse(text)
+      ElMessage.error(errData.message || '预览失败')
+      return
+    }
+    const url = window.URL.createObjectURL(blob)
+    window.open(url, '_blank')
+  } catch (error: any) {
+    ElMessage.error(error.message || '预览失败')
+  }
 }
 
 const handleExport = async () => {
   const pkCa = route.params.pkCa as string
   try {
-    const res: any = await downloadCertificate(pkCa)
-    // 处理blob下载
-    const blob = new Blob([res], { type: 'application/pdf' })
+    const blob: any = await downloadCertificate(pkCa)
+    // 后端返回的 JSON 错误也会被当作 blob，需要判断
+    if (blob.type === 'application/json' || blob.type === 'application/json;charset=UTF-8') {
+      const text = await new Response(blob).text()
+      const errData = JSON.parse(text)
+      ElMessage.error(errData.message || '下载失败')
+      return
+    }
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url

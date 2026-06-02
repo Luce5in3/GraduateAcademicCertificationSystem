@@ -117,6 +117,15 @@ export const getAvailableTemplates = () => {
   })
 }
 
+// 预览证书PDF（返回blob）
+export const previewCertificate = (pkCa: string) => {
+  return request({
+    url: `/certificate/preview/${pkCa}`,
+    method: 'get',
+    responseType: 'blob',
+  })
+}
+
 // 下载证书PDF
 export const downloadCertificate = (pkCa: string) => {
   return request({
@@ -126,7 +135,7 @@ export const downloadCertificate = (pkCa: string) => {
   })
 }
 
-// 获取证书预览URL
+// 获取证书预览URL（供参考，实际预览走previewCertificate接口）
 export const getCertificatePreviewUrl = (pkCa: string) => {
   return `/api/certificate/preview/${pkCa}`
 }

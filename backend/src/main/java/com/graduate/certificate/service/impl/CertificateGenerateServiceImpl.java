@@ -77,9 +77,12 @@ public class CertificateGenerateServiceImpl implements CertificateGenerateServic
 
         String content = templateContent;
         content = content.replace("${studentName}", nullSafe(student.getName()));
+        content = content.replace("${name}", nullSafe(student.getName()));
         content = content.replace("${studentNo}", nullSafe(student.getStudentNo()));
+        content = content.replace("${sno}", nullSafe(student.getStudentNo()));
         content = content.replace("${gender}", student.getGender() != null ? (student.getGender() == 1 ? "男" : "女") : "");
         content = content.replace("${idCard}", nullSafe(student.getIdCard()));
+        content = content.replace("${idcard}", nullSafe(student.getIdCard()));
         content = content.replace("${college}", nullSafe(student.getCollege()));
         content = content.replace("${major}", nullSafe(student.getMajor()));
         content = content.replace("${className}", nullSafe(student.getClassName()));
